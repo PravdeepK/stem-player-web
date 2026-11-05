@@ -96,6 +96,8 @@ export interface MixerHandle {
 }
 
 // --- separation ------------------------------------------------------------
+// services/separator mirrors the job, hash and storage shapes below by hand
+// in Python. Change both together.
 
 // Why a separation failed, set by the worker. "model" means the weights
 // couldn't load, which no retry would fix.
@@ -105,7 +107,7 @@ export type SeparationErrorCode = "too_long" | "decode" | "model" | "write" | "t
 // `stems` on "done" holds R2 keys.
 export type SeparationEvent =
   | { type: "progress"; value: number }
-  | { type: "stage"; value: Stage }
+  | { type: "stage"; value: Extract<Stage, "starting" | "separating"> }
   | { type: "done"; stems: StemMap<string> }
   | { type: "error"; code: SeparationErrorCode; message: string };
 
@@ -148,7 +150,6 @@ export const HASH_PATTERN = /^[0-9a-f]{32}$/;
 export const JOB_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 // --- storage keys ----------------------------------------------------------
-// services/separator writes these keys by hand in Python. Change both together.
 
 // AAC rather than Opus: every browser the site runs in decodes AAC, while
 // Safari's Opus support depends on the container and the iOS version.
