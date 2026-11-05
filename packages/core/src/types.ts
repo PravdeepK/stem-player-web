@@ -170,6 +170,9 @@ export const SEPARATIONS_PER_IP_PREFIX = "limit:separate:ip";
 export const separationsTodayKey = (day: string) => `limit:separate:day:${day}`;
 export const FEEDBACK_PER_IP_PREFIX = "limit:feedback:ip";
 export const feedbackTodayKey = (day: string) => `limit:feedback:day:${day}`;
+// A daily counter only matters for its own UTC day. Two days covers a request
+// that lands just before midnight, then the key goes.
+export const DAILY_COUNTER_TTL_SECONDS = 48 * 60 * 60;
 
 // Any value pauses separation; deleting the key resumes it.
 export const SEPARATION_PAUSED_KEY = "separation:paused";
