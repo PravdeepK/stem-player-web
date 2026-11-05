@@ -1,10 +1,11 @@
 import js from "@eslint/js";
+import { defineConfig } from "eslint/config";
 import nextPlugin from "@next/eslint-plugin-next";
 import reactHooks from "eslint-plugin-react-hooks";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 
-export default tseslint.config(
+export default defineConfig(
   { ignores: ["**/node_modules/", "**/.next/", "**/out/", "**/next-env.d.ts", "**/playwright-report/", "**/test-results/"] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -29,7 +30,21 @@ export default tseslint.config(
     // DOM's types for AudioContext and Blob, but can't reach for its globals.
     files: ["packages/core/**/*.ts"],
     rules: {
-      "no-restricted-globals": ["error", "window", "document", "navigator", "localStorage", "location"],
+      "no-restricted-globals": [
+        "error",
+        "window",
+        "self",
+        "document",
+        "navigator",
+        "location",
+        "localStorage",
+        "sessionStorage",
+        "indexedDB",
+        "AudioContext",
+        "OfflineAudioContext",
+        "requestAnimationFrame",
+        "cancelAnimationFrame",
+      ],
     },
   },
   {
