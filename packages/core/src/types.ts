@@ -43,7 +43,8 @@ export type FeedbackType = "bug" | "feature";
 export type StemApi = {
   pickFile(): Promise<File | null>;
   getModel(): Promise<ModelId>;
-  separate(file: File, model: ModelId): Promise<Result<{ entry: CacheEntry }>>;
+  // The API won't start a job without a Turnstile token from the page.
+  separate(file: File, model: ModelId, turnstileToken: string): Promise<Result<{ entry: CacheEntry }>>;
   findCached(file: File, model: ModelId): Promise<CacheEntry | null>;
   // Most recently used first.
   listRecent(): Promise<CacheEntry[]>;
