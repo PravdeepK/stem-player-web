@@ -1,0 +1,75 @@
+name: Deploy
+
+# Every job is skipped until the repository variables VERCEL_ORG_ID and
+# VERCEL_PROJECT_ID and the secret VERCEL_TOKEN exist.
+on:
+  pull_request:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  VERCEL_CLI: vercel@65.5.0
+  VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+  NEXT_TELEMETRY_DISABLED: "1"
+
+jobs:
+  preview:
+    name: Preview
+    # Pull requests from forks get no secrets, so they get no preview either.
+    if: >-
+      github.event_name == 'pull_request' && vars.VERCEL_PROJECT_ID != '' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: preview-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    environment:
+      name: preview
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npx --yes "$VERCEL_CLI" pull --yes --environment=preview --token="$VERCEL_TOKEN"
+      - run: npx --yes "$VERCEL_CLI" build --token="$VERCEL_TOKEN"
+      - id: deploy
+        run: echo "url=$(npx --yes "$VERCEL_CLI" deploy --prebuilt --token="$VERCEL_TOKEN")" >> "$GITHUB_OUTPUT"
+
+  production:
+    name: Production
+    # Only after CI passed on a push to main, never on a PR's run.
+    if: >-
+      github.event_name == 'workflow_run' && vars.VERCEL_PROJECT_ID != '' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Never cancel a production deploy halfway; the next one waits its turn.
+    concurrency:
+      group: production
+      cancel-in-progress: false
+    environment:
+      name: production
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npx --yes "$VERCEL_CLI" pull --yes --environment=production --token="$VERCEL_TOKEN"
+      - run: npx --yes "$VERCEL_CLI" build --prod --token="$VERCEL_TOKEN"
+      - id: deploy
+        run: echo "url=$(npx --yes "$VERCEL_CLI" deploy --prebuilt --prod --token="$VERCEL_TOKEN")" >> "$GITHUB_OUTPUT"
