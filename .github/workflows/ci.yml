@@ -61,6 +61,8 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      playwright: ${{ steps.playwright.outputs.version }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -68,6 +70,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - id: playwright
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
       - uses: actions/cache@v6
         with:
           path: apps/web/.next/cache
@@ -88,6 +92,10 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Playwright's image ships the browsers and WebKit's system libraries, so a
+    # slow Ubuntu mirror can't stall the run. Its tag follows the lockfile.
+    container:
+      image: mcr.microsoft.com/playwright:v${{ needs.build.outputs.playwright }}-noble
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -99,20 +107,6 @@ jobs:
         with:
           name: next-build
           path: apps/web/.next
-      - id: playwright
-        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
-      - id: browsers
-        uses: actions/cache@v6
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ steps.playwright.outputs.version }}
-      # The browsers come from the cache, but WebKit's system libraries don't.
-      - if: steps.browsers.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium webkit
-        working-directory: apps/web
-      - if: steps.browsers.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium webkit
-        working-directory: apps/web
       - run: npm run test:e2e
       - if: failure()
         uses: actions/upload-artifact@v7
