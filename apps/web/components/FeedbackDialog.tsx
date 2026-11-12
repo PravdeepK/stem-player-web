@@ -415,7 +415,7 @@ function useTurnstile(container: RefObject<HTMLDivElement | null>) {
 
 type Invalid = Partial<Record<"title" | "description", string>>;
 
-function FeedbackForm({ type, onClose }: { type: FeedbackType; onClose: () => void }) {
+function FeedbackForm({ type, close }: { type: FeedbackType; close: () => void }) {
   const isBug = type === "bug";
   const [system] = useState(browserSystemInfo);
   const [fields, setFields] = useState<Fields>({ title: "", description: "", steps: "", includeSystem: true, website: "" });
@@ -510,7 +510,7 @@ function FeedbackForm({ type, onClose }: { type: FeedbackType; onClose: () => vo
           on GitHub.
         </p>
         <footer className="feedback-actions">
-          <button type="button" className="primary" onClick={onClose} autoFocus>
+          <button type="button" className="primary" onClick={close} autoFocus>
             Done
           </button>
         </footer>
@@ -627,7 +627,7 @@ function FeedbackForm({ type, onClose }: { type: FeedbackType; onClose: () => vo
       </div>
 
       <footer className="feedback-actions">
-        <button type="button" onClick={onClose} disabled={busy}>
+        <button type="button" onClick={close} disabled={busy}>
           Cancel
         </button>
         <button type="submit" className="primary" disabled={busy}>
@@ -648,10 +648,13 @@ export default function FeedbackDialog({ type, onClose }: FeedbackDialogProps) {
     if (!type && dialog.open) dialog.close();
   }, [type]);
 
+  // Escape, Cancel and Done all close the <dialog> itself, so its close event
+  // is the one place onClose gets called.
+  const close = () => dialogRef.current?.close();
+
   return (
-    // Escape closes a modal <dialog> by itself, and that ends up here too.
     <dialog ref={dialogRef} className="feedback" aria-labelledby="feedback-heading" onClose={onClose}>
-      {type && <FeedbackForm key={type} type={type} onClose={onClose} />}
+      {type && <FeedbackForm key={type} type={type} close={close} />}
       <style jsx global>{`
         .feedback {
           --bg: #0d0d0d;
