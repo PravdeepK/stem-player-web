@@ -17,11 +17,13 @@ const stemFileName = (stem: string, source: StemSource) => `${stem}.${stemExtens
 
 const asBlob = async (source: StemSource) => (source instanceof URL ? new Blob([await readStem(source)]) : source);
 
+// A file with the name counts as taken too, as it did for fs.existsSync.
 async function exists(base: FileSystemDirectoryHandle, name: string): Promise<boolean> {
   try {
     await base.getDirectoryHandle(name);
     return true;
   } catch (err) {
+    if (err instanceof DOMException && err.name === "TypeMismatchError") return true;
     if (err instanceof DOMException && err.name === "NotFoundError") return false;
     throw err;
   }
