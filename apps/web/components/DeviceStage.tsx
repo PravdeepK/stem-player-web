@@ -29,9 +29,9 @@ import { detentOnEndpoint, tap } from "../lib/haptics";
 // have no equivalent here, and the device has no mute at all, so those are this
 // app's own.
 //
-// Every part also has a hidden button for keyboard access. They only show while
-// focused, and pulse the matching part so focus has a visible effect on the
-// device.
+// The centre, dots and − / + also have hidden buttons for keyboard access. They
+// only show while focused, and pulse the matching part so focus has a visible
+// effect on the device.
 
 export interface DeviceStageProps {
   mixer: MixerHandle;
