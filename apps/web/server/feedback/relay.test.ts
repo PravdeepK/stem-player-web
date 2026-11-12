@@ -66,7 +66,7 @@ function fakeWorld({ turnstile = "pass", redis = "up", issueStatus = 201, labels
       if (turnstile === "down") return new Response("bad gateway", { status: 502 });
       return Response.json(turnstile === "pass" ? { success: true, "error-codes": [] } : { success: false, "error-codes": ["invalid-input-response"] });
     }
-    if (url === "https://redis.test/pipeline") {
+    if (url === "https://redis.test/multi-exec") {
       expect((init?.headers as Record<string, string>).Authorization).toBe("Bearer redis-token");
       calls.redis.push(body);
       if (redis === "hang") return hang(init?.signal);
@@ -314,6 +314,27 @@ describe("daily limits", () => {
       fetch: async () => Response.json([{ error: "WRONGTYPE" }, { result: 1 }]),
     });
     await expect(takeDaily(redis, FEEDBACK_LIMIT, "1.1.1.1")).rejects.toThrow(/INCR failed: WRONGTYPE/);
+  });
+
+  test("each counter and its expiry go in one transaction", async () => {
+    const sent: { url: string; body: unknown }[] = [];
+    const redis = upstash({
+      url: "https://redis.test/",
+      token: "t",
+      fetch: async (url, init) => {
+        sent.push({ url: String(url), body: JSON.parse(String(init?.body)) });
+        return Response.json([{ result: 1 }, { result: 1 }]);
+      },
+    });
+    await takeDaily(redis, FEEDBACK_LIMIT, "1.1.1.1", { now: EVENING });
+    const ipKey = `${FEEDBACK_PER_IP_PREFIX}:2026-11-12:1.1.1.1`;
+    expect(sent[0]).toEqual({ url: "https://redis.test/multi-exec", body: [["INCR", ipKey], ["EXPIRE", ipKey, DAILY_COUNTER_TTL_SECONDS]] });
+    expect(sent).toHaveLength(2);
+  });
+
+  test("an aborted transaction is treated as down", async () => {
+    const redis = upstash({ url: "https://redis.test", token: "t", fetch: async () => Response.json({ error: "EXECABORT" }, { status: 400 }) });
+    await expect(takeDaily(redis, FEEDBACK_LIMIT, "1.1.1.1")).rejects.toThrow(/Upstash answered 400/);
   });
 
   test("days are UTC dates", () => {

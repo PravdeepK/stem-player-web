@@ -25,8 +25,8 @@ export type LimitResult = { ok: true } | { ok: false; retryAfter: number };
 export type RedisCommand = (string | number)[];
 
 export interface Redis {
-  /** Runs the commands in order in one round trip and resolves to their results. */
-  pipeline(commands: RedisCommand[], signal?: AbortSignal): Promise<unknown[]>;
+  /** Runs the commands as one MULTI/EXEC transaction and resolves to their results. */
+  transaction(commands: RedisCommand[], signal?: AbortSignal): Promise<unknown[]>;
 }
 
 export class RedisError extends Error {}
@@ -35,10 +35,10 @@ export class RedisError extends Error {}
 export function upstash({ url, token, fetch = globalThis.fetch }: { url: string; token: string; fetch?: typeof globalThis.fetch }): Redis {
   const base = url.replace(/\/+$/, "");
   return {
-    async pipeline(commands, signal) {
+    async transaction(commands, signal) {
       let res: Response;
       try {
-        res = await fetch(`${base}/pipeline`, {
+        res = await fetch(`${base}/multi-exec`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
           body: JSON.stringify(commands),
@@ -76,8 +76,9 @@ function secondsUntilNextUtcDay(now: number) {
 }
 
 async function count(redis: Redis, key: string, signal?: AbortSignal) {
-  // EXPIRE on every hit is harmless: the date in the key already ends the window.
-  const [value] = await redis.pipeline([["INCR", key], ["EXPIRE", key, DAILY_COUNTER_TTL_SECONDS]], signal);
+  // One transaction, so a counter never exists without its expiry. EXPIRE on
+  // every hit is harmless: the date in the key already ends the window.
+  const [value] = await redis.transaction([["INCR", key], ["EXPIRE", key, DAILY_COUNTER_TTL_SECONDS]], signal);
   if (typeof value !== "number") throw new RedisError(`INCR ${key} gave ${JSON.stringify(value)}`);
   return value;
 }
