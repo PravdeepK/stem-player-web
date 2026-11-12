@@ -787,7 +787,6 @@ button.link:hover:not(:disabled) {
 .feedback p {
   margin: 0;
 }
-/* The fields scroll; the title and the buttons stay put. */
 .feedback-body {
   display: flex;
   flex-direction: column;
@@ -1002,7 +1001,8 @@ button.link:hover:not(:disabled) {
   :root {
     --edge: 16px;
   }
-  /* Full width, with the links and the "?" in a row of their own under it. */
+  /* The 240px of side room that keeps the transport clear of the links and
+     the "?" would leave a phone a 120px seek bar, so they move under it. */
   .transport {
     width: auto;
     margin: 0 calc(var(--edge) + var(--safe-right)) 0 calc(var(--edge) + var(--safe-left));

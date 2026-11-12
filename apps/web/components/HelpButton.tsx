@@ -5,7 +5,8 @@ export interface HelpButtonProps {
   onFeedback: (type: FeedbackType) => void;
 }
 
-// The "?" in the bottom-right corner, opening a small menu of the feedback forms.
+// One small "?" asks which form first, so two feedback buttons don't sit in
+// the corner beside the device.
 
 const ITEMS: { type: FeedbackType; label: string; path: string }[] = [
   {
