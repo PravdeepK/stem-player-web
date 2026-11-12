@@ -389,9 +389,10 @@ function useTurnstile(container: RefObject<HTMLDivElement | null>) {
     widget.current = ready;
     return () => {
       closed = true;
+      // Settling resets the widget, so it goes before the widget does.
+      settle({ ok: false, code: "turnstile_failed" });
       if (rendered) rendered.api.remove(rendered.id);
       widget.current = null;
-      settle({ ok: false, code: "turnstile_failed" });
     };
   }, [container]);
 
