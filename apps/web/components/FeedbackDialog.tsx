@@ -55,7 +55,7 @@ function cleanLine(value: string) {
 }
 
 function escapeMarkdown(text: string) {
-  return text.replace(/</g, "&lt;").replace(/(^|[^\w`])@([a-z0-9][a-z0-9-]*)/gi, "$1`@$2`");
+  return text.replace(/</g, "&lt;").replace(/(^|\W)@(?=[a-z0-9])/gi, "$1@⁠");
 }
 
 export function systemLines(system: SystemInfo | null) {

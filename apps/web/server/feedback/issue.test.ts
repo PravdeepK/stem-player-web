@@ -104,11 +104,29 @@ describe("formatIssueBody", () => {
       system: { browser: "<b>Chrome</b> `x` @bot" },
     });
     const body = formatIssueBody(report);
-    expect(body).toContain("Hey `@octocat`, &lt;/details>&lt;img src=x onerror=alert(1)>");
+    expect(body).toContain("Hey @⁠octocat, &lt;/details>&lt;img src=x onerror=alert(1)>");
     expect(body, "an email isn't a mention").toContain("me@example.com");
     expect(body).not.toContain("Steps to reproduce");
     expect(body).toContain("- Browser: bChrome/b x bot");
     expect(body.match(/<\/details>/g)).toHaveLength(1);
     expect(formatIssueBody({ ...report, system: null })).not.toContain("<details>");
+  });
+
+  test("leaves no mention GitHub would act on, whatever is around it", () => {
+    // GitHub's mention pattern: an @ at the start or after a non-word
+    // character, then a letter or digit.
+    const mention = /(?:^|\W)@[a-z0-9]/im;
+    const inputs = ["hi `@octocat", "`@octocat`", "``@octocat`", "(@octocat)", "@octocat first", "two @@octocat", "*@octocat*", "[@octocat]", "@org/team"];
+    for (const description of inputs) {
+      const body = formatIssueBody(validReport({ type: "feature", title: "Ping", description }));
+      expect(body, description).not.toMatch(mention);
+      expect(body.replace(/⁠/g, ""), "reads the same once rendered").toContain(description);
+    }
+  });
+
+  test("leaves an @ after a word character alone, since GitHub doesn't treat it as a mention", () => {
+    for (const description of ["mail me@example.com", "snake_@case"]) {
+      expect(formatIssueBody(validReport({ type: "feature", title: "Mail", description }))).toContain(description);
+    }
   });
 });
