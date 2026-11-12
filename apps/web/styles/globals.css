@@ -478,6 +478,9 @@ button.link:hover:not(:disabled) {
   min-height: 0;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
+  /* Without a column, the grid widens to fit a long song title instead of
+     letting the title truncate. */
+  grid-template-columns: minmax(0, 1fr);
   overflow: hidden;
   background: radial-gradient(
     ellipse at 50% 44%,
