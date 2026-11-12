@@ -3,24 +3,37 @@ import { describe, expect, it } from "vitest";
 import { createStemCache, idFor, type CacheDirectory, type CacheFile } from "./cache";
 
 // OPFS doesn't exist in Node, so the cache runs against a folder in memory that
-// fails the way OPFS does: a DOMException named NotFoundError.
+// fails the way OPFS does: NotFoundError for a missing entry, and, like
+// Chromium, no removing a file while its writable is open.
 const notFound = () => new DOMException("not found", "NotFoundError");
+let quotaFull = false;
 
 class MemoryFile implements CacheFile {
   blob = new Blob([]);
+  open = false;
   constructor(readonly name: string) {}
   async getFile() {
     return new File([this.blob], this.name);
   }
   async createWritable() {
     const parts: (Blob | string)[] = [];
+    this.open = true;
     return {
-      write: async (data: Blob | string) => void parts.push(data),
-      close: async () => void (this.blob = new Blob(parts)),
-      abort: async () => void (parts.length = 0),
+      write: async (data: Blob | string) => {
+        if (quotaFull) throw new DOMException("quota", "QuotaExceededError");
+        parts.push(data);
+      },
+      close: async () => {
+        this.blob = new Blob(parts);
+        this.open = false;
+      },
+      abort: async () => void (this.open = false),
     };
   }
 }
+
+const hasOpenFile = (entry: MemoryDirectory | MemoryFile): boolean =>
+  entry instanceof MemoryFile ? entry.open : [...entry.entries.values()].some(hasOpenFile);
 
 class MemoryDirectory implements CacheDirectory {
   entries = new Map<string, MemoryDirectory | MemoryFile>();
@@ -41,7 +54,10 @@ class MemoryDirectory implements CacheDirectory {
     return file;
   }
   async removeEntry(name: string) {
-    if (!this.entries.delete(name)) throw notFound();
+    const entry = this.entries.get(name);
+    if (!entry) throw notFound();
+    if (hasOpenFile(entry)) throw new DOMException("locked", "NoModificationAllowedError");
+    this.entries.delete(name);
   }
   async *keys() {
     yield* this.entries.keys();
@@ -108,6 +124,17 @@ describe("stem cache", () => {
     expect(await cache.touch(idOf("c"))).toBeNull();
     expect(await cache.list()).toHaveLength(0);
     await cache.clearIncomplete();
+    expect([...dir.entries.keys()]).toEqual([]);
+  });
+
+  it("removes a failed write and reports why it failed", async () => {
+    const { dir, add } = setup(1e9);
+    quotaFull = true;
+    try {
+      await expect(add(idOf("d"), "full")).rejects.toThrow("quota");
+    } finally {
+      quotaFull = false;
+    }
     expect([...dir.entries.keys()]).toEqual([]);
   });
 
