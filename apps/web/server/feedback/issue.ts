@@ -56,13 +56,18 @@ function cleanLine(value: string) {
 
 /**
  * User text as issue markdown: no raw HTML (so nothing can close the system
- * info block or hide text), and no @mentions, so nobody gets pinged. A word
+ * info block or hide text), no character references (GitHub decodes &#64;
+ * and &commat; to an @ before it looks for mentions), and no @mentions, so
+ * nobody gets pinged. The & goes first so the &lt; isn't escaped twice. A word
  * joiner after the @ breaks GitHub's mention pattern and renders as nothing.
  * Wrapping mentions in backticks didn't hold: a stray backtick before one
  * doesn't open a code span, so the mention still went out.
  */
 export function escapeMarkdown(text: string) {
-  return text.replace(/</g, "&lt;").replace(/(^|\W)@(?=[a-z0-9])/gi, "$1@\u2060");
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/(^|\W)@(?=[a-z0-9])/gi, "$1@\u2060");
 }
 
 function fail(field: string, message: string): Failure {

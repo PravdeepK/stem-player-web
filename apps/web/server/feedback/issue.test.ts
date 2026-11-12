@@ -116,12 +116,39 @@ describe("formatIssueBody", () => {
     // GitHub's mention pattern: an @ at the start or after a non-word
     // character, then a letter or digit.
     const mention = /(?:^|\W)@[a-z0-9]/im;
-    const inputs = ["hi `@octocat", "`@octocat`", "``@octocat`", "(@octocat)", "@octocat first", "two @@octocat", "*@octocat*", "[@octocat]", "@org/team"];
+    const inputs = [
+      "hi `@octocat",
+      "`@octocat`",
+      "(@octocat)",
+      "@octocat first",
+      "two @@octocat",
+      "*@octocat*",
+      "[@octocat]",
+      "@org/team",
+      // GitHub reads both of these as mentions too, accent and backslash
+      // notwithstanding.
+      "café@octocat",
+      "\\@octocat",
+    ];
     for (const description of inputs) {
       const body = formatIssueBody(validReport({ type: "feature", title: "Ping", description }));
       expect(body, description).not.toMatch(mention);
       expect(body.replace(/\u2060/g, ""), "reads the same once rendered").toContain(description);
     }
+  });
+
+  test("spells out character references, so none can turn into an @ on GitHub", () => {
+    for (const reference of ["&#64;", "&#0064;", "&#x40;", "&#X40;", "&commat;"]) {
+      const description = `hi ${reference}octocat`;
+      const body = formatIssueBody(validReport({ type: "feature", title: "Ping", description }));
+      expect(body, reference).toContain(`hi &amp;${reference.slice(1)}octocat`);
+      expect(body, reference).not.toMatch(/&(?:#0*64|#x0*40|commat);/i);
+    }
+  });
+
+  test("escapes & before <, so nothing comes out escaped twice", () => {
+    const body = formatIssueBody(validReport({ type: "feature", title: "Amp", description: "R&B <3 &lt;" }));
+    expect(body).toContain("R&amp;B &lt;3 &amp;lt;");
   });
 
   test("leaves an @ after a word character alone, since GitHub doesn't treat it as a mention", () => {
