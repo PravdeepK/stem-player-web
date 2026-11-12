@@ -1,0 +1,114 @@
+import { describe, expect, test } from "vitest";
+import { formatIssueBody, issueLabels, LIMITS, validateReport } from "./issue";
+
+const SYSTEM = { app: "1a2b3c4", browser: "Safari 26.1", os: "macOS", memory: "unknown" };
+
+const goodBug = (extra: Record<string, unknown> = {}) => ({
+  type: "bug",
+  title: "Vocals drop out",
+  description: "The vocals stem goes silent after a minute.",
+  steps: "1. Open a song\n2. Wait",
+  system: SYSTEM,
+  website: "",
+  ...extra,
+});
+
+function validReport(input: unknown) {
+  const checked = validateReport(input);
+  if (!checked.ok) throw new Error(`${checked.field}: ${checked.message}`);
+  return checked.report;
+}
+
+describe("validateReport", () => {
+  test("accepts a good bug report and trims it", () => {
+    const report = validReport(goodBug({ title: "  Vocals\ndrop   out  ", description: "Line one\r\nline two  " }));
+    expect(report.title).toBe("Vocals drop out");
+    expect(report.description).toBe("Line one\nline two");
+    expect(report.system).toEqual(SYSTEM);
+  });
+
+  test("rejects bad types, missing and oversized fields, and unknown keys", () => {
+    const cases: [unknown, string][] = [
+      [null, "body"],
+      [[], "body"],
+      [goodBug({ type: "question" }), "type"],
+      [goodBug({ type: "constructor" }), "type"],
+      [goodBug({ title: undefined }), "title"],
+      [goodBug({ title: "  a " }), "title"],
+      [goodBug({ title: 42 }), "title"],
+      [goodBug({ title: "x".repeat(LIMITS.title.max + 1) }), "title"],
+      [goodBug({ description: "" }), "description"],
+      [goodBug({ description: "x".repeat(LIMITS.description.max + 1) }), "description"],
+      [goodBug({ steps: "x".repeat(LIMITS.steps.max + 1) }), "steps"],
+      [goodBug({ type: "feature" }), "steps"],
+      [goodBug({ system: "Safari" }), "system"],
+      [goodBug({ system: { ...SYSTEM, songs: "Secret Song.mp3" } }), "system"],
+      // The desktop's fields are gone from the web.
+      [goodBug({ system: { chip: "Apple M2" } }), "system"],
+      [goodBug({ system: { python: "stem engine" } }), "system"],
+      [goodBug({ system: { browser: 5 } }), "system"],
+      [goodBug({ system: { browser: "x".repeat(LIMITS.systemValue + 1) } }), "system"],
+      [goodBug({ logs: "..." }), "logs"],
+      [goodBug({ website: 1 }), "website"],
+    ];
+    for (const [input, field] of cases) {
+      const checked = validateReport(input);
+      expect(checked.ok, JSON.stringify(input)).toBe(false);
+      if (!checked.ok) expect(checked.field, JSON.stringify(input)).toBe(field);
+    }
+  });
+
+  test("feature requests need no steps or system info", () => {
+    const report = validReport({ type: "feature", title: "Loop a section", description: "Let me loop the chorus." });
+    expect(report.system).toBeNull();
+  });
+});
+
+test("issues are labelled by type and as coming from the site", () => {
+  expect(issueLabels("feature")).toEqual(["enhancement", "from-web"]);
+  expect(issueLabels("bug")).toEqual(["bug", "from-web"]);
+});
+
+describe("formatIssueBody", () => {
+  test("writes clean markdown with a collapsed system info section", () => {
+    expect(formatIssueBody(validReport(goodBug()))).toBe(
+      [
+        "### Description",
+        "",
+        "The vocals stem goes silent after a minute.",
+        "",
+        "### Steps to reproduce",
+        "",
+        "1. Open a song",
+        "2. Wait",
+        "",
+        "<details>",
+        "<summary>System info</summary>",
+        "",
+        "- Site version: 1a2b3c4",
+        "- Browser: Safari 26.1",
+        "- OS: macOS",
+        "- Memory: unknown",
+        "",
+        "</details>",
+        "",
+      ].join("\n"),
+    );
+  });
+
+  test("escapes HTML and mentions, and leaves out empty sections", () => {
+    const report = validReport({
+      type: "bug",
+      title: "Weird",
+      description: "Hey @octocat, </details><img src=x onerror=alert(1)> mail me@example.com",
+      system: { browser: "<b>Chrome</b> `x` @bot" },
+    });
+    const body = formatIssueBody(report);
+    expect(body).toContain("Hey `@octocat`, &lt;/details>&lt;img src=x onerror=alert(1)>");
+    expect(body, "an email isn't a mention").toContain("me@example.com");
+    expect(body).not.toContain("Steps to reproduce");
+    expect(body).toContain("- Browser: bChrome/b x bot");
+    expect(body.match(/<\/details>/g)).toHaveLength(1);
+    expect(formatIssueBody({ ...report, system: null })).not.toContain("<details>");
+  });
+});
