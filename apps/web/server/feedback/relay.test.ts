@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import http from "node:http";
 import type { AddressInfo } from "node:net";
 import { DAILY_COUNTER_TTL_SECONDS, feedbackTodayKey, FEEDBACK_PER_IP_PREFIX } from "@stem-player-web/core";
-import { describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { TURNSTILE_ACTION as dialogTurnstileAction } from "../../components/FeedbackDialog";
 import { FEEDBACK_LIMIT, takeDaily, upstash, utcDay } from "../limits";
 import type { CreateIssue } from "./github";
@@ -418,4 +418,55 @@ test("the Node adapter serves the handler over HTTP and stops reading oversized 
   } finally {
     server.close();
   }
+});
+
+describe("the API route", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  // The route builds its relay from process.env and the global fetch when it
+  // loads, so each test loads a fresh copy under its own env.
+  async function postToRoute(env: Record<string, string>, world: ReturnType<typeof fakeWorld>) {
+    for (const [name, value] of Object.entries(env)) vi.stubEnv(name, value);
+    vi.stubGlobal("fetch", world.fetch);
+    vi.resetModules();
+    const route = (await import("../../pages/api/feedback")).default;
+    vi.unstubAllGlobals();
+    const server = http.createServer(route);
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    try {
+      const res = await fetch(`http://127.0.0.1:${(server.address() as AddressInfo).port}/api/feedback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Origin: ORIGIN, "X-Turnstile-Token": "XXXX.DUMMY.TOKEN.XXXX" },
+        body: JSON.stringify(goodBug()),
+      });
+      return { status: res.status, body: await res.json() };
+    } finally {
+      server.close();
+    }
+  }
+
+  const { GITHUB_APP_ID: _id, GITHUB_APP_PRIVATE_KEY: _key, GITHUB_APP_INSTALLATION_ID: _install, GITHUB_API_URL: _api, ...previewEnv } = ENV;
+
+  test("previews and local runs file nothing, with no App keys and Cloudflare's test keys", async () => {
+    for (const VERCEL_ENV of ["preview", "development"]) {
+      const world = fakeWorld({ solved: { hostname: "example.com" } });
+      const res = await postToRoute({ ...previewEnv, VERCEL_ENV }, world);
+      expect(res, VERCEL_ENV).toEqual({ status: 201, body: { ok: true, number: 0, url: "https://github.com/PravdeepK/stem-player-web/issues/0" } });
+      expect(world.calls.turnstile).toHaveLength(1);
+      expect(world.calls.github).toHaveLength(0);
+    }
+  });
+
+  test("production files the issue through the App and checks where the token was solved", async () => {
+    const world = fakeWorld();
+    const res = await postToRoute({ ...ENV, VERCEL_ENV: "production" }, world);
+    expect(res).toEqual({ status: 201, body: { ok: true, number: 42, url: "https://github.com/PravdeepK/stem-player-web/issues/42" } });
+
+    const testKeys = fakeWorld({ solved: { hostname: "example.com" } });
+    expect((await postToRoute({ ...ENV, VERCEL_ENV: "production" }, testKeys)).status).toBe(403);
+    expect(testKeys.calls.github).toHaveLength(0);
+  });
 });
