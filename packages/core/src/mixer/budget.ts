@@ -9,9 +9,11 @@ export interface MemoryLimits {
   refuseAbove: number;
 }
 
-// Bytes, in decimal MB. Measured on an iPhone 18 Pro, where a tab holding more
-// decoded audio than this gets killed. At 48 kHz that keeps songs up to about
-// 5:25 in stereo and refuses anything past about 15:11.
+// Bytes, in decimal MB. An iPhone 18 Pro held four 48 kHz stems totalling
+// 922 MB without trouble, so its real limit is higher. These sit well under
+// that to leave room for the 3D scene and for older phones nobody has tried.
+// At 48 kHz they keep songs up to about 5:25 in stereo and refuse anything
+// past about 15:11.
 export const TOUCH_LIMITS: MemoryLimits = { monoAbove: 500e6, refuseAbove: 700e6 };
 
 export interface StemSize {
