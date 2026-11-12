@@ -37,10 +37,18 @@ async function exportToFolder(base: FileSystemDirectoryHandle, stems: StemMap<St
   const dir = await base.getDirectoryHandle(dirName, { create: true });
   try {
     for (const stem of STEM_NAMES) {
+      const blob = await asBlob(stems[stem]);
       const file = await dir.getFileHandle(stemFileName(stem, stems[stem]), { create: true });
       const writable = await file.createWritable();
-      await writable.write(await asBlob(stems[stem]));
-      await writable.close();
+      try {
+        await writable.write(blob);
+        await writable.close();
+      } catch (err) {
+        // Chromium locks a file while its writable is open, which would make
+        // removing the folder below fail and leave a partial export behind.
+        await writable.abort();
+        throw err;
+      }
     }
   } catch (err) {
     await base.removeEntry(dirName, { recursive: true });
