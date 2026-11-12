@@ -32,7 +32,11 @@ const LOCK = "stem-cache";
 // in-memory folder.
 export interface CacheFile {
   getFile(): Promise<File>;
-  createWritable(): Promise<{ write(data: Blob | string): Promise<void>; close(): Promise<void> }>;
+  createWritable(): Promise<{
+    write(data: Blob | string): Promise<void>;
+    close(): Promise<void>;
+    abort(): Promise<void>;
+  }>;
 }
 
 export interface CacheDirectory {
@@ -79,8 +83,15 @@ async function remove(parent: CacheDirectory, name: string): Promise<void> {
 
 async function writeFile(parent: CacheDirectory, name: string, data: Blob | string): Promise<void> {
   const writable = await (await parent.getFileHandle(name, { create: true })).createWritable();
-  await writable.write(data);
-  await writable.close();
+  try {
+    await writable.write(data);
+    await writable.close();
+  } catch (err) {
+    // An open writable locks the file in Chromium, so removing the entry would
+    // fail with a lock error that hides this one (usually the quota).
+    await writable.abort();
+    throw err;
+  }
 }
 
 function parseMeta(text: string): Meta | null {

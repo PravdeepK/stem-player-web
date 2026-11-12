@@ -17,6 +17,7 @@ class MemoryFile implements CacheFile {
     return {
       write: async (data: Blob | string) => void parts.push(data),
       close: async () => void (this.blob = new Blob(parts)),
+      abort: async () => void (parts.length = 0),
     };
   }
 }
