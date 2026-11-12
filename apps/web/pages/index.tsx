@@ -63,6 +63,15 @@ export default function Home() {
 
   const mixer = useAudioMixer();
 
+  // load() reports a failure (stems too long for a phone, a bad file) only in
+  // mixer.error, which is shown in the menu. So the menu closes when a song
+  // becomes ready, not when load() returns, and a failed load leaves it open.
+  const [wasLoaded, setWasLoaded] = useState(false);
+  if (mixer.isLoaded !== wasLoaded) {
+    setWasLoaded(mixer.isLoaded);
+    if (mixer.isLoaded) setMenuOpen(false);
+  }
+
   const toggleMenu = useCallback(() => setMenuOpen((open) => !open), []);
   const openMenu = useCallback(() => setMenuOpen(true), []);
   const closeMenu = useCallback(() => setMenuOpen(false), []);
@@ -83,7 +92,6 @@ export default function Home() {
     setExportNote("");
     setLoadNote("");
     await mixer.load(next.stems);
-    setMenuOpen(false);
     setRecents(await stemApi.listRecent());
   }
 
