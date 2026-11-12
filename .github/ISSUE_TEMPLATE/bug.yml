@@ -30,8 +30,9 @@ body:
       label: System info
       description: Your browser and its version, your OS, and how much memory the device has.
       placeholder: |
-        Browser: Safari 26.1
-        OS: macOS
-        Memory: 16 GB
+        Site version: 1a2b3c4
+        Browser: Chrome 142
+        OS: Windows
+        Memory: 8 GB or more
     validations:
       required: false
