@@ -1,0 +1,24 @@
+# The same fields as Request a feature on the site, which also prefills this
+# form (by field id) when it can't post the issue itself.
+name: Feature request
+description: An idea for something Stem Player could do.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Easiest from the site: the **?** button, then **Request a feature**. This is posted publicly.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What it would do, and how it would help.
+    validations:
+      required: true
+  - type: textarea
+    id: system
+    attributes:
+      label: System info
+      description: Optional. Your browser and OS, if they matter for the idea.
+    validations:
+      required: false
