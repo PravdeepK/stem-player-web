@@ -428,7 +428,7 @@ describe("the API route", () => {
 
   // The route builds its relay from process.env and the global fetch when it
   // loads, so each test loads a fresh copy under its own env.
-  async function postToRoute(env: Record<string, string>, world: ReturnType<typeof fakeWorld>) {
+  async function postToRoute(env: Record<string, string | undefined>, world: ReturnType<typeof fakeWorld>) {
     for (const [name, value] of Object.entries(env)) vi.stubEnv(name, value);
     vi.stubGlobal("fetch", world.fetch);
     vi.resetModules();
@@ -458,6 +458,14 @@ describe("the API route", () => {
       expect(world.calls.turnstile).toHaveLength(1);
       expect(world.calls.github).toHaveLength(0);
     }
+  });
+
+  test("with VERCEL_ENV unset, as under next dev or next start, nothing is filed even with App keys around", async () => {
+    const world = fakeWorld({ solved: { hostname: "example.com" } });
+    const res = await postToRoute({ ...ENV, VERCEL_ENV: undefined }, world);
+    expect(process.env.VERCEL_ENV).toBeUndefined();
+    expect(res).toEqual({ status: 201, body: { ok: true, number: 0, url: "https://github.com/PravdeepK/stem-player-web/issues/0" } });
+    expect(world.calls.github).toHaveLength(0);
   });
 
   test("production files the issue through the App and checks where the token was solved", async () => {
