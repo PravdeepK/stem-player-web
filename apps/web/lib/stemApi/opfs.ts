@@ -49,15 +49,22 @@ export async function saveToCache(
   const uncached: CacheEntry = { id, title, model, lastUsed: Date.now(), stems, demo: false };
   const cache = await openCache();
   if (!cache) return uncached;
+  let entry: CacheEntry | null;
   try {
-    const entry = await cache.commit(id, title, model, stems);
-    await cache.prune(id);
-    await keepStorage();
-    return entry ?? uncached;
+    entry = await cache.commit(id, title, model, stems);
   } catch (err) {
     console.error("[cache] couldn't save the stems:", err);
     return uncached;
   }
+  // The song is saved by now, so a failure here only means the cache stays
+  // over its limit or unpersisted until the next save.
+  try {
+    await cache.prune(id);
+    await keepStorage();
+  } catch (err) {
+    console.error("[cache] couldn't tidy up after saving:", err);
+  }
+  return entry ?? uncached;
 }
 
 // Without this the browser may clear the cache under storage pressure. Asked on
