@@ -14,8 +14,12 @@ function setup({ limits = null as MemoryLimits | null } = {}) {
   const files = new Map<string, ArrayBuffer>();
   const reads: string[] = [];
   let pending: ((now: number) => void)[] = [];
+  let contexts = 0;
   const mixer = createMixer({
-    createContext: () => context as unknown as AudioContext,
+    createContext: () => {
+      contexts++;
+      return context as unknown as AudioContext;
+    },
     readStem: async (source: StemSource) => {
       const key = String(source);
       reads.push(key);
@@ -45,7 +49,7 @@ function setup({ limits = null as MemoryLimits | null } = {}) {
     pending = [];
     for (const callback of run) callback(now);
   };
-  return { context, mixer, stems, reads, frame };
+  return { context, mixer, stems, reads, frame, contexts: () => contexts, frames: () => pending.length };
 }
 
 const channelsOf = (buffers: StemMap<AudioBuffer> | null) =>
@@ -225,6 +229,16 @@ describe("transport", () => {
   it("reads the output latency from the context", async () => {
     const { mixer } = await loaded();
     expect(mixer.getOutputLatency()).toBeCloseTo(0.025);
+  });
+
+  it("doesn't start playing when disposed during the resume", async () => {
+    const { mixer, contexts, frames } = await loaded();
+    const playing = mixer.play();
+    mixer.dispose();
+    await playing;
+    expect(contexts()).toBe(1);
+    expect(frames()).toBe(0);
+    expect(mixer.getState().isPlaying).toBe(false);
   });
 
   it("closes the context on dispose and starts over on the next load", async () => {

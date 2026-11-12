@@ -231,6 +231,9 @@ export function createMixer(deps: MixerDeps): Mixer {
     // iOS adds "interrupted" (a call, Siri, another app taking the audio),
     // which needs the same resume as "suspended".
     if (ctx.state !== "running") await ctx.resume();
+    // dispose() during the resume has closed this context. Carrying on would
+    // open a new one after unmount and run the frame loop with no song.
+    if (context !== ctx) return;
     startSourcesAt(clamp(offset, 0, duration));
     playing = true;
     setState({ isPlaying: true });
