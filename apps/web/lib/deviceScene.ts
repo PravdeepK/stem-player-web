@@ -596,7 +596,14 @@ export async function createDeviceScene(
 
     dispose() {
       cancelAnimationFrame(raf);
-      if (gesture) clearTimeout(gesture.holdTimer);
+      // A held pill lets go, as a held groove does in grooves.dispose(), so its
+      // repeat or scrub doesn't outlive the scene.
+      const g = gesture;
+      if (g) {
+        clearTimeout(g.holdTimer);
+        gesture = null;
+        if (g.holding && g.hit?.part.kind === "button") actions.onHoldEnd(g.hit.part.name, g.side!);
+      }
       grooves.dispose();
       resizeObserver.disconnect();
       canvas.removeEventListener("webglcontextlost", onContextLost);
