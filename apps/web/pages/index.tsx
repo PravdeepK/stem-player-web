@@ -162,6 +162,7 @@ export default function Home() {
               </button>
             ))}
           </div>
+          <p className="footnote">Older songs are removed automatically. Export a song to keep it.</p>
         </section>
       )}
 
