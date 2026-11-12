@@ -104,7 +104,7 @@ describe("formatIssueBody", () => {
       system: { browser: "<b>Chrome</b> `x` @bot" },
     });
     const body = formatIssueBody(report);
-    expect(body).toContain("Hey @⁠octocat, &lt;/details>&lt;img src=x onerror=alert(1)>");
+    expect(body).toContain("Hey @\u2060octocat, &lt;/details>&lt;img src=x onerror=alert(1)>");
     expect(body, "an email isn't a mention").toContain("me@example.com");
     expect(body).not.toContain("Steps to reproduce");
     expect(body).toContain("- Browser: bChrome/b x bot");
@@ -120,7 +120,7 @@ describe("formatIssueBody", () => {
     for (const description of inputs) {
       const body = formatIssueBody(validReport({ type: "feature", title: "Ping", description }));
       expect(body, description).not.toMatch(mention);
-      expect(body.replace(/⁠/g, ""), "reads the same once rendered").toContain(description);
+      expect(body.replace(/\u2060/g, ""), "reads the same once rendered").toContain(description);
     }
   });
 

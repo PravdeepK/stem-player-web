@@ -62,7 +62,7 @@ function cleanLine(value: string) {
  * doesn't open a code span, so the mention still went out.
  */
 export function escapeMarkdown(text: string) {
-  return text.replace(/</g, "&lt;").replace(/(^|\W)@(?=[a-z0-9])/gi, "$1@⁠");
+  return text.replace(/</g, "&lt;").replace(/(^|\W)@(?=[a-z0-9])/gi, "$1@\u2060");
 }
 
 function fail(field: string, message: string): Failure {
