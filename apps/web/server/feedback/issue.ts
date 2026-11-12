@@ -58,10 +58,13 @@ function cleanLine(value: string) {
  * User text as issue markdown: no raw HTML (so nothing can close the system
  * info block or hide text), no character references (GitHub decodes &#64;
  * and &commat; to an @ before it looks for mentions), and no @mentions, so
- * nobody gets pinged. The & goes first so the &lt; isn't escaped twice. A word
- * joiner after the @ breaks GitHub's mention pattern and renders as nothing.
- * Wrapping mentions in backticks didn't hold: a stray backtick before one
- * doesn't open a code span, so the mention still went out.
+ * nobody gets pinged. The & goes first so the &lt; isn't escaped twice.
+ *
+ * Mentions get a word joiner (U+2060) after the @, which breaks GitHub's
+ * mention pattern and renders as nothing. The desktop wrapped them in
+ * backticks instead. The joiner doesn't depend on how GitHub parses code
+ * spans, and it covers mentions GitHub finds in odd places, like café@name
+ * and \@name, without a special case for each.
  */
 export function escapeMarkdown(text: string) {
   return text
