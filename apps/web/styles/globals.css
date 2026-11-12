@@ -1,5 +1,1069 @@
+:root {
+  color-scheme: dark;
+
+  /* Browns from the room behind the device (the .mixer gradient), so the
+     menu reads as part of the same space rather than a grey panel over it. */
+  --bg: #0f0e0d;
+  --drawer: #191715;
+  --panel: #221f1c;
+  --panel-2: #2b2723;
+  --hover: #332e29;
+  --line: #3a342f;
+  --text: #ededed;
+  --muted: #948b83;
+  --accent: #f5f5f5;
+  --danger: #ff6b6b;
+  --ok: #7ee081;
+  --wave: #4a4a4a;
+
+  /* Radius grows with the size of the thing: panels, then the controls on
+     them, then the parts inside a control. */
+  --radius-panel: 14px;
+  --radius-control: 8px;
+  --radius-inner: 5px;
+
+  /* The LED colour matched to a photo of a lit device is linear RGB
+     (1.0, 0.09, 0.03): red, with a little green and blue bleeding through.
+     The LEDs are RGB, so the other stems get the same LED with a different
+     channel lit, keeping that bleed. Vocals is red and green together, the
+     amber an RGB LED makes. The device's LED texture appends an alpha byte
+     to these, so they have to stay #rrggbb. */
+  --zone-vocals: #ffaa30;
+  --zone-drums: #ff5530;
+  --zone-bass: #3055ff;
+  --zone-instrumental: #30ff55;
+
+  /* Notch, rounded corners and home bar, with viewport-fit=cover in _app. */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --edge: 20px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
 html,
 body {
   margin: 0;
+  padding: 0;
+}
+
+body {
+  /* An app, not a page: double-tapping a control shouldn't select its text. */
+  -webkit-user-select: none;
+  user-select: none;
+  /* iOS flashes a grey box over the whole canvas on every tap otherwise. */
+  -webkit-tap-highlight-color: transparent;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+    Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+}
+
+code,
+.mono {
+  font-family: "SF Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+  padding: 8px 14px;
+  border-radius: var(--radius-control);
+  transition: background 120ms ease, border-color 120ms ease, opacity 120ms ease;
+}
+
+button:hover:not(:disabled) {
+  background: var(--hover);
+  border-color: #4a423b;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+button.primary {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+button.primary:hover:not(:disabled) {
+  background: #ffffff;
+}
+
+button.link {
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+button.link:hover:not(:disabled) {
+  color: var(--text);
+  background: none;
+}
+
+/* --- layout ---------------------------------------------------------- */
+/* dvh rather than vh, so the transport isn't hidden behind a phone
+   browser's toolbar. */
+.wrap {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+/* The credit sits under the mixer and takes the home bar's space instead. */
+.wrap:has(> .credit) {
+  --safe-bottom: 0px;
+}
+/* Pinned while the menu scrolls, with the title centred on the 40px close
+   button. Sticky offsets start inside the drawer's top padding, hence the
+   negative top, to pin at its very top. */
+.head {
+  position: sticky;
+  z-index: 1;
+  top: calc(-26px - var(--safe-top));
+  margin: calc(-26px - var(--safe-top)) -20px 18px calc(-20px - var(--safe-left));
+  padding: calc(var(--edge) + var(--safe-top)) 20px 8px calc(72px + var(--safe-left));
+  background: var(--drawer);
+}
+.title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 40px;
+}
+.banner {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-control);
+  font-size: 13px;
+}
+.banner.danger {
+  background: rgba(255, 107, 107, 0.08);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+}
+.dim {
+  color: var(--muted);
+}
+.small {
+  font-size: 12px;
+}
+
+/* --- menu: grouped rows, like a Mac settings pane ------------------------ */
+.section {
+  margin-bottom: 22px;
+}
+.section-title {
+  margin: 0 0 6px 2px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.load-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.load-actions button {
+  flex: 1 1 140px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+.group {
+  overflow: hidden;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+}
+.group-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+.group-row + .group-row {
+  border-top: 1px solid var(--line);
+}
+.row-label {
+  flex: none;
+}
+.row-value {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: right;
+}
+.segmented {
+  display: flex;
+  margin-left: auto;
+  padding: 2px;
+  background: var(--panel-2);
+  border-radius: calc(var(--radius-inner) + 2px);
+}
+.segmented button {
+  min-width: 64px;
+  padding: 3px 12px;
+  font-size: 13px;
+  background: none;
+  border: none;
+  border-radius: var(--radius-inner);
+  color: var(--muted);
+}
+.segmented button.on {
+  background: var(--line);
+  color: var(--text);
+}
+.footnote {
+  margin: 6px 2px 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.recent {
+  width: 100%;
+  border: none;
+  border-radius: 0;
+  background: none;
+  text-align: left;
+}
+.recent .row-value {
+  text-align: left;
+}
+.recent[aria-current] .row-value::after {
+  content: " · Playing";
+  color: var(--muted);
+}
+.secondary {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+.secondary.small {
+  padding: 3px 10px;
+  font-size: 12px;
+  border-radius: calc(var(--radius-control) - 2px);
+}
+.notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  font-size: 13px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
+.notice .link {
+  flex: none;
+}
+.stems-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.stems-head .section-title {
+  margin: 0;
+}
+.stems-note {
+  margin: -12px 2px 0;
+}
+.about {
+  margin: 30px 2px 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+  -webkit-user-select: text;
+  user-select: text;
+}
+.about p {
+  margin: 0;
+}
+.err {
+  margin: 10px 0 4px;
+  color: var(--danger);
+  font-size: 14px;
+}
+
+/* --- NCS credit, under the player while the demo song is loaded ------- */
+.credit {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0 14px;
+  padding: 6px calc(16px + var(--safe-right)) calc(8px + env(safe-area-inset-bottom, 0px))
+    calc(16px + var(--safe-left));
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--muted);
+  background: var(--bg);
+  -webkit-user-select: text;
+  user-select: text;
+}
+.credit a {
+  color: inherit;
+  text-underline-offset: 2px;
+}
+.credit a:hover {
+  color: var(--text);
+}
+
+/* --- corner meter: the stems' live levels on the main screen ----------- */
+.meter {
+  position: absolute;
+  z-index: 2;
+  top: calc(var(--edge) + var(--safe-top));
+  right: calc(var(--edge) + var(--safe-right));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+.meter-stems--dots {
+  display: flex;
+  gap: 14px;
+  padding: 6px 4px 0;
+}
+.meter-stems--wave {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 180px;
+}
+.meter-stem {
+  transition: opacity 120ms ease;
+}
+.meter-stem.dimmed {
+  opacity: 0.35;
+}
+.meter-dot {
+  display: block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--zone);
+  will-change: transform;
+}
+.meter-wave {
+  position: relative;
+  height: 30px;
+}
+.meter-wave .wave {
+  inset: 7px 0;
+}
+
+/* --- links, bottom-left --------------------------------------------- */
+.social {
+  position: absolute;
+  z-index: 2;
+  left: calc(var(--edge) + var(--safe-left));
+  bottom: calc(var(--edge) + var(--safe-bottom));
+  display: flex;
+  gap: 4px;
+}
+.social a {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-control);
+  color: var(--muted);
+  transition: color 120ms ease, background 120ms ease;
+}
+.social a:hover {
+  color: var(--text);
+  background: var(--panel-2);
+}
+.social svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+/* --- help and feedback, bottom-right -------------------------------- */
+.help {
+  position: absolute;
+  z-index: 4;
+  right: calc(var(--edge) + var(--safe-right));
+  bottom: calc(var(--edge) + var(--safe-bottom));
+}
+.help-toggle {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  border-color: var(--line);
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1;
+}
+.help-toggle:hover:not(:disabled),
+.help-toggle--open {
+  color: var(--text);
+  border-color: var(--muted);
+  background: var(--panel-2);
+}
+/* A border and no shadow: a shadow barely shows on the near-black corner
+   the menu opens over, while the border marks its edge. */
+.help-menu {
+  position: absolute;
+  right: 0;
+  bottom: 42px;
+  min-width: 200px;
+  padding: 5px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius-control) + 4px);
+  animation: help-in 140ms ease;
+}
+@keyframes help-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+.help-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px;
+  border: 0;
+  border-radius: calc(var(--radius-control) - 1px);
+  background: transparent;
+  text-align: left;
+  white-space: nowrap;
+}
+.help-item:hover:not(:disabled),
+.help-item:focus-visible {
+  background: var(--panel-2);
+  outline: none;
+}
+.help-item svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.help-item-label {
+  font-size: 13px;
+}
+
+/* --- mixer: the device fills the window ------------------------------- */
+/* The device takes whatever height is left over the transport, so a phone
+   in landscape or a short window shrinks the device instead of hiding the
+   seek bar under a fixed inset. */
+.mixer {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  overflow: hidden;
+  background: radial-gradient(
+    ellipse at 50% 44%,
+    #2b2622 0%,
+    var(--drawer) 46%,
+    var(--bg) 100%
+  );
+}
+
+/* --- the device ------------------------------------------------------- */
+.stage {
+  position: relative;
+  grid-row: 1;
+  min-height: 0;
+}
+.stage-canvas {
+  display: block;
+  width: 100%;
   height: 100%;
+  touch-action: none;
+  cursor: grab;
+}
+.stage-canvas:active {
+  cursor: grabbing;
+}
+.stage-canvas[data-part]:not([data-part=""]) {
+  cursor: pointer;
+}
+.stage-caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 2px;
+  padding: 0 16px;
+  font-size: 13px;
+  text-align: center;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+/* Keyboard stand-ins for the physical parts: out of sight until focused. */
+.kbd-controls button {
+  position: absolute;
+  top: calc(var(--edge) + var(--safe-top));
+  left: calc(72px + var(--safe-left));
+  padding: 6px 12px;
+  font-size: 12px;
+  opacity: 0;
+  pointer-events: none;
+}
+.kbd-controls button:focus-visible {
+  opacity: 1;
+}
+
+/* Wide screens: centred, with room either side for the links and the "?". */
+.transport {
+  grid-row: 2;
+  width: min(560px, calc(100% - 240px));
+  margin: 0 auto;
+  padding: 10px 0 calc(22px + var(--safe-bottom));
+}
+.readout {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.readout > * {
+  flex: none;
+}
+.readout-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--muted);
+}
+
+/* --- menu ------------------------------------------------------------- */
+.menu-toggle {
+  position: absolute;
+  z-index: 3;
+  top: calc(var(--edge) + var(--safe-top));
+  left: calc(var(--edge) + var(--safe-left));
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+  gap: 4px;
+  width: 40px;
+  height: 40px;
+  padding: 0 10px;
+  border-radius: calc(var(--radius-control) + 2px);
+  background: var(--panel);
+}
+.menu-toggle span {
+  display: block;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--text);
+  transition: transform 200ms ease, opacity 120ms ease;
+}
+.menu-toggle--open span:nth-child(1) {
+  transform: translateY(6px) rotate(45deg);
+}
+.menu-toggle--open span:nth-child(2) {
+  opacity: 0;
+}
+.menu-toggle--open span:nth-child(3) {
+  transform: translateY(-6px) rotate(-45deg);
+}
+.drawer {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: min(calc(440px + var(--safe-left)), calc(100% - 56px));
+  padding: calc(26px + var(--safe-top)) 20px calc(24px + var(--safe-bottom))
+    calc(20px + var(--safe-left));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--drawer);
+  border-right: 1px solid var(--line);
+  transform: translateX(-100%);
+  visibility: hidden;
+  transition: transform 220ms ease, visibility 0s linear 220ms;
+}
+.drawer--open {
+  transform: none;
+  visibility: visible;
+  transition: transform 220ms ease;
+}
+
+/* --- seek ------------------------------------------------------------- */
+.seek {
+  position: relative;
+  margin: 4px 0 6px;
+  height: 18px;
+  cursor: pointer;
+  touch-action: none;
+}
+.seek-track {
+  position: absolute;
+  top: 7px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--panel-2);
+  border-radius: 999px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.seek-fill {
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+}
+
+/* --- stem rows -------------------------------------------------------- */
+.stems {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.stem {
+  position: relative;
+  padding: 10px 12px 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  transition: opacity 120ms ease;
+}
+.stem:has(:focus-visible) {
+  border-color: var(--zone);
+}
+.stem.dimmed {
+  opacity: 0.4;
+}
+.stem--vocals {
+  --zone: var(--zone-vocals);
+}
+.stem--drums {
+  --zone: var(--zone-drums);
+}
+.stem--bass {
+  --zone: var(--zone-bass);
+}
+.stem--instrumental {
+  --zone: var(--zone-instrumental);
+}
+.stem-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.stem-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--zone);
+  will-change: transform;
+}
+.stem-label {
+  font-size: 13px;
+  text-transform: capitalize;
+}
+/* Lightened, since the blue LED on its own is too dark for 11px text. */
+.stem-status {
+  font-size: 11px;
+  color: color-mix(in srgb, var(--zone) 70%, #ffffff);
+}
+.stem-value {
+  margin-left: auto;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.wave-wrap {
+  position: relative;
+  width: 100%;
+  height: 72px;
+  cursor: pointer;
+  overflow: hidden;
+  touch-action: none;
+}
+/* Inset, and free to spill into the row's padding, so a bounce never clips. */
+.stem .wave-wrap {
+  overflow: visible;
+}
+.wave {
+  position: absolute;
+  inset: 12px 0;
+  pointer-events: none;
+  will-change: transform;
+}
+.playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  background: var(--text);
+  pointer-events: none;
+}
+
+/* Keyboard-only until the device is unavailable: clipped, but still focusable. */
+.stem-controls {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.stems--fallback .stem-controls {
+  position: static;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: auto;
+  height: auto;
+  margin-top: 8px;
+  clip-path: none;
+}
+.stem-controls .vol {
+  flex: 1 1 auto;
+  accent-color: var(--zone);
+}
+.stem-controls .tog {
+  width: 30px;
+  padding: 6px 0;
+  text-align: center;
+  font-size: 12px;
+  border-radius: calc(var(--radius-control) - 2px);
+}
+.stem-controls .tog.on {
+  background: var(--zone);
+  color: var(--bg);
+  border-color: var(--zone);
+}
+
+/* --- feedback dialog ---------------------------------------------------- */
+.feedback {
+  display: flex;
+  flex-direction: column;
+  width: min(480px, calc(100% - 32px));
+  max-height: min(720px, calc(100dvh - 32px - var(--safe-top) - var(--safe-bottom)));
+  padding: 22px 0 16px;
+  color: var(--text);
+  background: var(--drawer);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  font-size: 13px;
+}
+.feedback:not([open]) {
+  display: none;
+}
+.feedback::backdrop {
+  background: rgba(0, 0, 0, 0.55);
+}
+.feedback header,
+.feedback .done {
+  padding: 0 24px;
+}
+.feedback header {
+  margin-bottom: 16px;
+}
+.feedback h1,
+.feedback h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+.feedback p {
+  margin: 0;
+}
+.public {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+/* The same amber as the vocals LED, as a "this goes public" marker. */
+.public::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: var(--zone-vocals);
+  vertical-align: 1px;
+}
+/* The fields scroll; the buttons stay put at the bottom. */
+.feedback form {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 2px 24px 14px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.field .label {
+  font-weight: 600;
+  color: var(--text);
+}
+.field .label .dim {
+  font-weight: 400;
+}
+.feedback input[type="text"],
+.feedback textarea {
+  width: 100%;
+  font: inherit;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  padding: 8px 10px;
+  outline: none;
+  transition: border-color 120ms ease;
+  -webkit-user-select: text;
+  user-select: text;
+}
+.feedback textarea {
+  resize: none;
+}
+.feedback input[type="text"]:focus,
+.feedback textarea:focus {
+  border-color: #6a6058;
+}
+.feedback ::placeholder {
+  color: #6a6058;
+}
+.field.invalid input,
+.field.invalid textarea {
+  border-color: rgba(255, 107, 107, 0.6);
+}
+.hint {
+  color: var(--danger);
+  font-size: 12px;
+}
+/* The honeypot: off-screen for people, still filled in by form bots. */
+.hp {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.system {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  padding: 10px 12px;
+}
+.system p {
+  margin-top: 6px;
+}
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.check input {
+  accent-color: var(--accent);
+  width: 14px;
+  height: 14px;
+  margin: 0;
+}
+.feedback .mono {
+  font-size: 11.5px;
+}
+.feedback pre {
+  margin: 8px 0 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--muted);
+  -webkit-user-select: text;
+  user-select: text;
+}
+#system-lines {
+  columns: 2;
+  column-gap: 16px;
+}
+.feedback details summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+.feedback details summary:hover {
+  color: var(--text);
+}
+#preview-text {
+  max-height: 180px;
+  overflow-y: auto;
+  padding: 10px 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
+.feedback button {
+  padding: 7px 14px;
+}
+.feedback button:focus-visible {
+  outline: 2px solid #6a6058;
+  outline-offset: 2px;
+}
+.feedback button.link {
+  padding: 0;
+  color: var(--text);
+  font-weight: 600;
+}
+.feedback button.link:hover:not(:disabled) {
+  color: #ffffff;
+}
+#failure-text {
+  color: var(--danger);
+  font-weight: 600;
+}
+.feedback .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.feedback .actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: auto;
+  padding: 12px 24px 0;
+  border-top: 1px solid var(--line);
+}
+.feedback .done + .actions {
+  border-top: none;
+}
+.feedback .done {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding-block: 24px;
+  text-align: center;
+}
+.tick {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  color: var(--bg);
+  background: var(--ok);
+  margin-bottom: 6px;
+}
+#issue-url {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* --- phones ------------------------------------------------------------ */
+@media (max-width: 640px) {
+  :root {
+    --edge: 16px;
+  }
+  /* Full width, with the links and the "?" in a row of their own under it. */
+  .transport {
+    width: auto;
+    margin: 0 calc(var(--edge) + var(--safe-right)) 0 calc(var(--edge) + var(--safe-left));
+    padding: 6px 0 calc(var(--edge) + 32px + 8px + var(--safe-bottom));
+  }
+  .readout {
+    gap: 12px;
+  }
+  .stage-caption {
+    font-size: 12px;
+  }
+  .segmented button {
+    min-width: 0;
+    padding: 3px 10px;
+  }
+  .meter-stems--wave {
+    width: 140px;
+  }
+  .feedback .fields,
+  .feedback header,
+  .feedback .actions {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  #system-lines {
+    columns: 1;
+  }
+}
+
+/* iOS zooms the page on focus into any field under 16px. */
+@media (pointer: coarse) {
+  .feedback input[type="text"],
+  .feedback textarea {
+    font-size: 16px;
+  }
+}
+
+/* Respect Reduce Motion: no sliding menu or animated icons. */
+@media (prefers-reduced-motion: reduce) {
+  .drawer,
+  .drawer--open,
+  .menu-toggle span,
+  .segmented button {
+    transition: none;
+  }
+  .help-menu {
+    animation: none;
+  }
 }
