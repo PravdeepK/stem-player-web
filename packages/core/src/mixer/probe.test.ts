@@ -71,5 +71,6 @@ describe("probeSeconds", () => {
     expect(probeSeconds(new TextEncoder().encode("ID3 and then some mp3 frames").buffer)).toBeNull();
     const truncated = file(box("moov", mvhd(0, 1000, 5000))).slice(0, 20);
     expect(probeSeconds(truncated)).toBeNull();
+    expect(probeSeconds(file(box("moov", box("mvhd"))))).toBeNull();
   });
 });

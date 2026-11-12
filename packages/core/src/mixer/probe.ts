@@ -55,8 +55,8 @@ function mp4Seconds(view: DataView, start: number, end: number): number | null {
 }
 
 function mvhdSeconds(view: DataView, body: number, end: number): number | null {
-  const version = view.getUint8(body);
-  const long = version === 1;
+  if (body >= end) return null;
+  const long = view.getUint8(body) === 1;
   if (body + (long ? 32 : 20) > end) return null;
   const timescale = view.getUint32(body + (long ? 20 : 12));
   const duration = long ? view.getBigUint64(body + 24) : BigInt(view.getUint32(body + 16));
