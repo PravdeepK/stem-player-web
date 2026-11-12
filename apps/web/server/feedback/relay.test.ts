@@ -135,7 +135,9 @@ describe("the relay", () => {
     expect(parse(res)).toEqual({ ok: true, number: 42, url: "https://github.com/PravdeepK/stem-player-web/issues/42" });
     const issue = world.calls.github.find((c) => c.url.endsWith("/issues"))!;
     expect(issue.url).toBe("https://api.test/repos/PravdeepK/stem-player-web/issues");
-    expect(issue.body.title).toBe("Vocals drop out");
+    // The title is built from fixed parts; the sender's summary is in the body.
+    expect(issue.body.title).toMatch(/^Feedback \(web\): bug r[0-9a-f]{6}$/);
+    expect(issue.body.body).toMatch(/^### Summary\n\n```text\nVocals drop out\n```\n/);
     expect(issue.body.labels).toEqual(["bug", "from-web"]);
     const checked = validateReport(goodBug());
     expect(checked.ok && issue.body.body).toBe(checked.ok && formatIssueBody(checked.report));

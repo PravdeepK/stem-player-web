@@ -1,10 +1,11 @@
 // Turns a feedback POST from the site into a GitHub issue. The handler is plain
 // data in, data out ({ status, headers, body }), so the API route and the tests
 // drive the same code.
+import { randomUUID } from "node:crypto";
 import type { IncomingHttpHeaders, IncomingMessage, ServerResponse } from "node:http";
 import { FEEDBACK_LIMIT, takeDaily, upstashFromEnv, type Redis } from "../limits";
 import { createGitHubClient, type CreatedIssue, type CreateIssue } from "./github";
-import { formatIssueBody, issueLabels, validateReport } from "./issue";
+import { formatIssueBody, issueLabels, issueTitle, validateReport } from "./issue";
 import { MAX_TOKEN_LENGTH, verifyTurnstile } from "./turnstile";
 
 const OWNER = "PravdeepK";
@@ -88,6 +89,12 @@ export function allowedOrigins(value: string | undefined) {
       .map((origin) => origin.trim().replace(/\/+$/, ""))
       .filter(Boolean),
   );
+}
+
+// Starts with a letter and has no #, so it can't read as an issue number
+// even if GitHub looks for references in titles.
+function reportId() {
+  return `r${randomUUID().slice(0, 6)}`;
 }
 
 function header(headers: IncomingHttpHeaders, name: string) {
@@ -228,7 +235,7 @@ export function createRelay({
     const labels = issueLabels(report.type);
     let issue: CreatedIssue;
     try {
-      issue = await createIssueFn({ title: report.title, body: formatIssueBody(report), labels }, signal);
+      issue = await createIssueFn({ title: issueTitle(report.type, reportId()), body: formatIssueBody(report), labels }, signal);
     } catch (err) {
       log.error("[feedback]", err instanceof Error ? err.message : err);
       return error(502, "github_error", {}, cors);

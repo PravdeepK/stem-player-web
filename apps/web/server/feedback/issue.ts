@@ -134,7 +134,7 @@ export function systemLines(system: SystemInfo | null) {
 
 /** A validated report as the issue's markdown body. */
 export function formatIssueBody(report: Report) {
-  const parts = ["### Description", "", fence(report.description)];
+  const parts = ["### Summary", "", fence(report.title), "", "### Description", "", fence(report.description)];
   if (report.type === "bug" && report.steps) {
     parts.push("", "### Steps to reproduce", "", fence(report.steps));
   }
@@ -145,6 +145,16 @@ export function formatIssueBody(report: Report) {
     parts.push("", "<details>", "<summary>System info</summary>", "", fence(lines.join("\n")), "", "</details>");
   }
   return parts.join("\n") + "\n";
+}
+
+/**
+ * The issue's title, from fixed parts only. Whether GitHub looks for mentions
+ * or issue references in a title isn't confirmed, so the sender's own summary
+ * goes in the body, fenced, instead. `id` tells reports apart in the issue
+ * list.
+ */
+export function issueTitle(type: FeedbackType, id: string) {
+  return `Feedback (web): ${type} ${id}`;
 }
 
 export function issueLabels(type: FeedbackType) {

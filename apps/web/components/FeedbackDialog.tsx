@@ -78,7 +78,7 @@ interface Report {
 }
 
 function formatIssueBody(report: Report) {
-  const parts = ["### Description", "", fence(report.description)];
+  const parts = ["### Summary", "", fence(report.title), "", "### Description", "", fence(report.description)];
   if (report.type === "bug" && report.steps) {
     parts.push("", "### Steps to reproduce", "", fence(report.steps));
   }
@@ -186,10 +186,16 @@ function normalized(report: ReportInput): Report {
   };
 }
 
-/** Title and body, for the clipboard or the preview. */
+/** The issue body, summary first, for the clipboard or the preview. */
 export function reportText(report: ReportInput) {
-  const clean = normalized(report);
-  return `${clean.title}\n\n${formatIssueBody(clean)}`;
+  return formatIssueBody(normalized(report));
+}
+
+// The GitHub link puts the summary in the new issue's title, outside any
+// fence. A word joiner (U+2060) after each @ and # keeps it from pinging
+// anyone or linking another issue, in case GitHub reads titles for those.
+export function neutralizeTitle(title: string) {
+  return title.replace(/[@#]/g, "$&\u2060");
 }
 
 function cutTo(text: string, length: number) {
@@ -207,7 +213,7 @@ export function buildPrefillUrl(report: ReportInput, limit = MAX_PREFILL_URL) {
   const clean = normalized(report);
   const fields: Record<string, string> = {
     template: clean.type === "bug" ? "bug.yml" : "feature.yml",
-    title: clean.title,
+    title: neutralizeTitle(clean.title),
     description: clean.description,
   };
   if (clean.type === "bug" && clean.steps) fields.steps = clean.steps;

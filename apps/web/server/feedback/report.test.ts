@@ -58,7 +58,7 @@ describe("the dialog's copy of the report rules", () => {
     for (const report of reports) {
       const checked = validateReport(report);
       if (!checked.ok) throw new Error(checked.message);
-      expect(reportText(report)).toBe(`${checked.report.title}\n\n${formatIssueBody(checked.report)}`);
+      expect(reportText(report)).toBe(formatIssueBody(checked.report));
     }
   });
 });
@@ -107,9 +107,13 @@ test("a report carries system info only when the box is ticked, and steps only f
   expect(validateReport(feature).ok).toBe(true);
 });
 
-test("the copied report is the title and the issue body", () => {
+test("the copied report is the issue body, summary first", () => {
   const text = reportText(buildReport("bug", FIELDS, SYSTEM));
-  expect(text.startsWith("Vocals drop out\n\n### Description\n\n```text\nSilent after a minute.\n```\n\n### Steps to reproduce\n\n```text\n1. Play\n```\n")).toBe(true);
+  expect(
+    text.startsWith(
+      "### Summary\n\n```text\nVocals drop out\n```\n\n### Description\n\n```text\nSilent after a minute.\n```\n\n### Steps to reproduce\n\n```text\n1. Play\n```\n",
+    ),
+  ).toBe(true);
   expect(text).toContain("<summary>System info</summary>");
   expect(text).toContain("\nBrowser: Safari 26.1\n");
   // A half-filled draft still previews.
@@ -133,6 +137,15 @@ describe("the GitHub link", () => {
     expect(feature.searchParams.get("template")).toBe("feature.yml");
     expect(feature.searchParams.get("steps")).toBeNull();
     expect(feature.searchParams.get("system")).toBeNull();
+  });
+
+  test("can't ping anyone or link an issue through the title", () => {
+    const title = "@octocat broke owner/repo#1 and #12";
+    const url = new URL(buildPrefillUrl(buildReport("bug", { ...FIELDS, title }, SYSTEM)).url);
+    const filled = url.searchParams.get("title") ?? "";
+    expect(filled).toBe("@\u2060octocat broke owner/repo#\u20601 and #\u206012");
+    expect(filled.replace(/\u2060/g, ""), "reads the same").toBe(title);
+    expect(filled).not.toMatch(/[@#][^\u2060]/);
   });
 
   test("only fills fields the issue templates have", () => {

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { fence, formatIssueBody, issueLabels, LIMITS, validateReport } from "./issue";
+import { fence, formatIssueBody, issueLabels, issueTitle, LIMITS, validateReport } from "./issue";
 
 const SYSTEM = { app: "1a2b3c4", browser: "Safari 26.1", os: "macOS", memory: "unknown" };
 
@@ -64,6 +64,11 @@ describe("validateReport", () => {
   });
 });
 
+test("the title is built from fixed parts only", () => {
+  expect(issueTitle("bug", "r1a2b3c")).toBe("Feedback (web): bug r1a2b3c");
+  expect(issueTitle("feature", "r1a2b3c")).toBe("Feedback (web): feature r1a2b3c");
+});
+
 test("issues are labelled by type and as coming from the site", () => {
   expect(issueLabels("feature")).toEqual(["enhancement", "from-web"]);
   expect(issueLabels("bug")).toEqual(["bug", "from-web"]);
@@ -96,6 +101,12 @@ describe("formatIssueBody", () => {
   test("writes each field in its own fence, with system info collapsed", () => {
     expect(formatIssueBody(validReport(goodBug()))).toBe(
       [
+        "### Summary",
+        "",
+        "```text",
+        "Vocals drop out",
+        "```",
+        "",
         "### Description",
         "",
         "```text",
@@ -147,6 +158,11 @@ describe("formatIssueBody", () => {
         expect(formatIssueBody(validReport({ type: "feature", title: "Tricky", description: value }))).toContain(block);
       }
     }
+  });
+
+  test("fences the summary like any other field", () => {
+    const body = formatIssueBody(validReport({ type: "feature", title: "@octocat see #1", description: "Body." }));
+    expect(body.startsWith("### Summary\n\n```text\n@octocat see #1\n```\n")).toBe(true);
   });
 
   test("an empty value reads the way GitHub's own forms show one", () => {
