@@ -1,8 +1,9 @@
 import type { HapticPattern } from "@stem-player-web/core";
 
-// Most browsers have no haptics at all (Safari and every desktop browser lack
-// navigator.vibrate), so every call can be a no-op and callers never branch on
-// whether a tap actually happened. Android buzzes the motor instead.
+// Most devices have no haptics the page can reach: Safari has no
+// navigator.vibrate, and desktop Chrome's does nothing. So every call can be a
+// no-op, and callers never branch on whether a tap actually happened. Android
+// buzzes the motor instead.
 
 // Short enough that a press feels like a tick, not a buzz. The detent runs
 // longer so reaching the end of a range feels different from a press.
