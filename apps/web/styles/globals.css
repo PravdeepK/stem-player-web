@@ -296,7 +296,7 @@ button.link:hover:not(:disabled) {
   margin: -12px 2px 0;
 }
 .about {
-  margin: 30px 2px 0;
+  margin: 30px 2px 22px;
   font-size: 12px;
   line-height: 1.45;
   color: var(--muted);
