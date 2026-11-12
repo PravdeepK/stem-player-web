@@ -162,7 +162,6 @@ export interface ReportInput {
   website?: string;
 }
 
-/** The form's fields as the JSON the relay takes. */
 export function buildReport(type: FeedbackType, fields: Partial<Fields>, system: SystemInfo | null): ReportInput {
   const report: ReportInput = { type, title: fields.title ?? "", description: fields.description ?? "" };
   if (type === "bug" && fields.steps) report.steps = fields.steps;
@@ -253,7 +252,6 @@ function plural(count: number, unit: string) {
   return `${count} ${unit}${count === 1 ? "" : "s"}`;
 }
 
-/** What to tell the user when a submission fails. */
 export function friendlyError(code: string, { message, retryAfter, status }: { message?: string; retryAfter?: number | string | null; status?: number } = {}) {
   if (code === "rate_limited") {
     // The limits are per UTC day, so the wait can be most of a day.
