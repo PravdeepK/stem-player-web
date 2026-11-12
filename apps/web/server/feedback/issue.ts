@@ -55,27 +55,19 @@ function cleanLine(value: string) {
 }
 
 /**
- * User text as issue markdown: no raw HTML (so nothing can close the system
- * info block or hide text), no character references (GitHub decodes &#64;
- * and &commat; to an @ before it looks for mentions), and no @mentions, so
- * nobody gets pinged.
- *
- * Only an & that starts a reference CommonMark would decode (it has to end in
- * a semicolon) gets escaped. Escaping every & would break bare URLs like
- * ?a=1&b=2 and show &amp; inside code, where nothing is decoded. The & goes
- * before the < so the &lt; it adds isn't escaped again.
- *
- * Mentions get a word joiner (U+2060) after the @, which breaks GitHub's
- * mention pattern and renders as nothing. The desktop wrapped them in
- * backticks instead. The joiner doesn't depend on how GitHub parses code
- * spans, and it covers mentions GitHub finds in odd places, like café@name
- * and \@name, without a special case for each.
+ * Text the sender wrote, as a fenced code block. Anyone can post through the
+ * form, and outside a fence GitHub turns @name into a ping, and owner/repo#1,
+ * GH-1 or an issue URL into a "mentioned this" entry on someone else's issue.
+ * Escaping each trick in turn kept missing the next one. Inside a fence
+ * GitHub finds no mentions, decodes no character references, links nothing
+ * and renders no HTML. The fence is one backtick longer than the longest run
+ * in the value, so nothing in it can close the block early.
  */
-export function escapeMarkdown(text: string) {
-  return text
-    .replace(/&(?=#[0-9]{1,7};|#[xX][0-9a-fA-F]{1,6};|[A-Za-z][A-Za-z0-9]*;)/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/(^|\W)@(?=[a-z0-9])/gi, "$1@\u2060");
+export function fence(value: string) {
+  if (!value) return "_No response_";
+  const longestRun = Math.max(0, ...(value.match(/`+/g) ?? []).map((run) => run.length));
+  const ticks = "`".repeat(Math.max(3, longestRun + 1));
+  return `${ticks}text\n${value}\n${ticks}`;
 }
 
 function fail(field: string, message: string): Failure {
@@ -142,15 +134,15 @@ export function systemLines(system: SystemInfo | null) {
 
 /** A validated report as the issue's markdown body. */
 export function formatIssueBody(report: Report) {
-  const parts = ["### Description", "", escapeMarkdown(report.description)];
+  const parts = ["### Description", "", fence(report.description)];
   if (report.type === "bug" && report.steps) {
-    parts.push("", "### Steps to reproduce", "", escapeMarkdown(report.steps));
+    parts.push("", "### Steps to reproduce", "", fence(report.steps));
   }
+  // Fenced too: anyone can send system values, and GH-1 or an issue URL fits
+  // the characters they're allowed.
   const lines = systemLines(report.system);
   if (lines.length) {
-    parts.push("", "<details>", "<summary>System info</summary>", "");
-    for (const line of lines) parts.push(`- ${line}`);
-    parts.push("", "</details>");
+    parts.push("", "<details>", "<summary>System info</summary>", "", fence(lines.join("\n")), "", "</details>");
   }
   return parts.join("\n") + "\n";
 }

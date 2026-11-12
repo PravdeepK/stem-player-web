@@ -4,7 +4,7 @@
 import fs from "node:fs";
 import { describe, expect, test } from "vitest";
 import * as dialog from "../../components/FeedbackDialog";
-import { formatIssueBody, LIMITS, SYSTEM_FIELDS, systemLines, validateReport } from "./issue";
+import { fence, formatIssueBody, LIMITS, SYSTEM_FIELDS, systemLines, validateReport } from "./issue";
 
 const {
   MAX_PREFILL_URL,
@@ -44,7 +44,17 @@ describe("the dialog's copy of the report rules", () => {
       buildReport("bug", FIELDS, SYSTEM),
       buildReport("feature", { ...FIELDS, includeSystem: false }, SYSTEM),
       buildReport("bug", { title: "  Two\tspaces  ", description: "Hey @octocat </details> &#64;a &#x40;b &commat;c &#64d R&B https://example.com/?a=1&b=2 `a && b`\r\nnext `@line café@d\u0007\n```\nif (a && b) play();\n```", steps: "  " }, null),
+      buildReport(
+        "bug",
+        { title: "Refs", description: "owner/repo#1 #1 GH-1 https://github.com/o/r/issues/1 \\@x", steps: "````\n~~~\n` lone", includeSystem: true },
+        SYSTEM,
+      ),
+      buildReport("feature", { title: "Ticks", description: "```" }, null),
     ];
+    for (const report of reports) {
+      // The dialog's fence agrees with the relay's on its own too.
+      for (const value of [report.description, report.steps ?? ""]) expect(dialog.fence(value)).toBe(fence(value));
+    }
     for (const report of reports) {
       const checked = validateReport(report);
       if (!checked.ok) throw new Error(checked.message);
@@ -99,9 +109,9 @@ test("a report carries system info only when the box is ticked, and steps only f
 
 test("the copied report is the title and the issue body", () => {
   const text = reportText(buildReport("bug", FIELDS, SYSTEM));
-  expect(text.startsWith("Vocals drop out\n\n### Description\n\nSilent after a minute.\n\n### Steps to reproduce\n\n1. Play\n")).toBe(true);
+  expect(text.startsWith("Vocals drop out\n\n### Description\n\n```text\nSilent after a minute.\n```\n\n### Steps to reproduce\n\n```text\n1. Play\n```\n")).toBe(true);
   expect(text).toContain("<summary>System info</summary>");
-  expect(text).toContain("- Browser: Safari 26.1");
+  expect(text).toContain("\nBrowser: Safari 26.1\n");
   // A half-filled draft still previews.
   expect(reportText(buildReport("bug", { title: "", description: "" }, null))).toContain("### Description");
 });

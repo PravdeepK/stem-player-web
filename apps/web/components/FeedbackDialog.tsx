@@ -57,11 +57,11 @@ function cleanLine(value: string) {
   return value.replace(/\s+/g, " ").replace(CONTROL, "").trim();
 }
 
-function escapeMarkdown(text: string) {
-  return text
-    .replace(/&(?=#[0-9]{1,7};|#[xX][0-9a-fA-F]{1,6};|[A-Za-z][A-Za-z0-9]*;)/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/(^|\W)@(?=[a-z0-9])/gi, "$1@\u2060");
+export function fence(value: string) {
+  if (!value) return "_No response_";
+  const longestRun = Math.max(0, ...(value.match(/`+/g) ?? []).map((run) => run.length));
+  const ticks = "`".repeat(Math.max(3, longestRun + 1));
+  return `${ticks}text\n${value}\n${ticks}`;
 }
 
 export function systemLines(system: SystemInfo | null) {
@@ -78,15 +78,15 @@ interface Report {
 }
 
 function formatIssueBody(report: Report) {
-  const parts = ["### Description", "", escapeMarkdown(report.description)];
+  const parts = ["### Description", "", fence(report.description)];
   if (report.type === "bug" && report.steps) {
-    parts.push("", "### Steps to reproduce", "", escapeMarkdown(report.steps));
+    parts.push("", "### Steps to reproduce", "", fence(report.steps));
   }
+  // Fenced too: anyone can send system values, and GH-1 or an issue URL fits
+  // the characters they're allowed.
   const lines = systemLines(report.system);
   if (lines.length) {
-    parts.push("", "<details>", "<summary>System info</summary>", "");
-    for (const line of lines) parts.push(`- ${line}`);
-    parts.push("", "</details>");
+    parts.push("", "<details>", "<summary>System info</summary>", "", fence(lines.join("\n")), "", "</details>");
   }
   return parts.join("\n") + "\n";
 }
