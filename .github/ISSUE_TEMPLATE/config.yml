@@ -1,0 +1,7 @@
+# Every issue starts from the bug or feature form, the same two the site uses.
+blank_issues_enabled: false
+# The desktop app has its own repo, and its reports belong there.
+contact_links:
+  - name: Stem Player for Mac
+    url: https://github.com/PravdeepK/stem-player/issues/new/choose
+    about: Bugs and ideas for the desktop app.

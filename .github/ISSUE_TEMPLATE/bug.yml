@@ -1,0 +1,37 @@
+# The same fields as Report a bug on the site, which also prefills this form
+# (by field id) when it can't post the issue itself.
+name: Bug report
+description: Something in Stem Player doesn't work the way it should.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Easiest from the site: the **?** button, then **Report a bug**. This is posted publicly, so leave out song names, file paths and anything private.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open a song
+        2. …
+    validations:
+      required: false
+  - type: textarea
+    id: system
+    attributes:
+      label: System info
+      description: Your browser and its version, your OS, and how much memory the device has.
+      placeholder: |
+        Browser: Safari 26.1
+        OS: macOS
+        Memory: 16 GB
+    validations:
+      required: false
