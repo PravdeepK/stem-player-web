@@ -12,6 +12,8 @@ const REPO = "stem-player-web";
 export const MAX_BODY_BYTES = 16 * 1024;
 // The token rides in a header so the report body keeps the desktop relay's shape.
 export const TURNSTILE_HEADER = "x-turnstile-token";
+// Set by FeedbackDialog's widget, so a token solved for another form fails here.
+export const TURNSTILE_ACTION = "feedback";
 // Vercel stops the function at 10 s. Every outside call shares this deadline,
 // which leaves time to send an error before that.
 const DEADLINE_MS = 8000;
@@ -59,6 +61,10 @@ export interface RelayOptions {
   // Stands in for the GitHub App, so a deploy without its keys can still run
   // the whole relay.
   createIssue?: CreateIssue;
+  // Whether Cloudflare's answer has to name an allowed origin's hostname and
+  // the feedback action. Only off where Cloudflare's test keys are in use,
+  // since they always answer example.com with no action.
+  checkTurnstileSource?: boolean;
   deadlineMs?: number;
 }
 
@@ -95,8 +101,19 @@ function header(headers: IncomingHttpHeaders, name: string) {
  * GITHUB_APP_PRIVATE_KEY, GITHUB_APP_INSTALLATION_ID, and optionally
  * GITHUB_API_URL (for a mock GitHub).
  */
-export function createRelay({ env = process.env, fetch = globalThis.fetch, now = Date.now, log = console, createIssue, deadlineMs = DEADLINE_MS }: RelayOptions = {}) {
+export function createRelay({
+  env = process.env,
+  fetch = globalThis.fetch,
+  now = Date.now,
+  log = console,
+  createIssue,
+  checkTurnstileSource = true,
+  deadlineMs = DEADLINE_MS,
+}: RelayOptions = {}) {
   const origins = allowedOrigins(env.FEEDBACK_ALLOWED_ORIGINS);
+  const turnstileExpect = checkTurnstileSource
+    ? { action: TURNSTILE_ACTION, hostnames: new Set([...origins].filter((origin) => URL.canParse(origin)).map((origin) => new URL(origin).hostname)) }
+    : undefined;
   let redis: Redis | null = null;
   let github: CreateIssue | null = createIssue ?? null;
 
@@ -188,7 +205,7 @@ export function createRelay({ env = process.env, fetch = globalThis.fetch, now =
     const token = header(headers, TURNSTILE_HEADER) || "";
     if (!token || token.length > MAX_TOKEN_LENGTH) return error(403, "turnstile_failed", {}, cors);
     try {
-      const verdict = await verifyTurnstile({ secret, token, ip, fetch, signal });
+      const verdict = await verifyTurnstile({ secret, token, ip, expect: turnstileExpect, fetch, signal });
       if (!verdict.ok) {
         log.warn(`[feedback] turnstile refused: ${verdict.codes.join(", ") || "no reason"}`);
         return error(403, "turnstile_failed", {}, cors);

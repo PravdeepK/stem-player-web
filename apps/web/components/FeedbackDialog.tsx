@@ -15,6 +15,9 @@ export interface FeedbackDialogProps {
 
 const FEEDBACK_URL = "/api/feedback";
 const TURNSTILE_HEADER = "X-Turnstile-Token";
+// The relay checks Cloudflare saw this action, so a token solved for another
+// form on the site can't be spent here.
+export const TURNSTILE_ACTION = "feedback";
 const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 const SITE_VERSION = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 7);
 export const ISSUES_URL = "https://github.com/PravdeepK/stem-player-web/issues";
@@ -303,6 +306,7 @@ export async function submitReport(
 
 interface TurnstileOptions {
   sitekey: string;
+  action: string;
   theme: "dark";
   execution: "execute";
   appearance: "interaction-only";
@@ -368,6 +372,7 @@ function useTurnstile(container: RefObject<HTMLDivElement | null>) {
       if (closed || !container.current) throw new Error("the form closed before the widget loaded");
       const id = api.render(container.current, {
         sitekey,
+        action: TURNSTILE_ACTION,
         theme: "dark",
         execution: "execute",
         appearance: "interaction-only",

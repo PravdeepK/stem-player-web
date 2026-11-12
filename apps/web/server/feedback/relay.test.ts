@@ -3,10 +3,20 @@ import http from "node:http";
 import type { AddressInfo } from "node:net";
 import { DAILY_COUNTER_TTL_SECONDS, feedbackTodayKey, FEEDBACK_PER_IP_PREFIX } from "@stem-player-web/core";
 import { describe, expect, test } from "vitest";
+import { TURNSTILE_ACTION as dialogTurnstileAction } from "../../components/FeedbackDialog";
 import { FEEDBACK_LIMIT, takeDaily, upstash, utcDay } from "../limits";
 import type { CreateIssue } from "./github";
 import { formatIssueBody, validateReport } from "./issue";
-import { allowedOrigins, clientIp, createRelay, MAX_BODY_BYTES, nodeHandler, type RelayRequest, type RelayResponse } from "./relay";
+import {
+  allowedOrigins,
+  clientIp,
+  createRelay,
+  MAX_BODY_BYTES,
+  nodeHandler,
+  TURNSTILE_ACTION,
+  type RelayRequest,
+  type RelayResponse,
+} from "./relay";
 
 const { privateKey } = crypto.generateKeyPairSync("rsa", {
   modulusLength: 2048,
@@ -41,6 +51,8 @@ const goodBug = (extra: Record<string, unknown> = {}) => ({
 
 interface Options {
   turnstile?: "pass" | "fail" | "down" | "hang";
+  // What a passing siteverify says about where the widget ran.
+  solved?: { hostname?: string; action?: string };
   redis?: "up" | "down" | "hang";
   issueStatus?: number;
   labels?: string[];
@@ -48,7 +60,7 @@ interface Options {
 
 // Cloudflare, Upstash and GitHub in one fetch: records every call and answers
 // like the real APIs.
-function fakeWorld({ turnstile = "pass", redis = "up", issueStatus = 201, labels }: Options = {}) {
+function fakeWorld({ turnstile = "pass", solved = { hostname: "stems.test", action: "feedback" }, redis = "up", issueStatus = 201, labels }: Options = {}) {
   const counters = new Map<string, number>();
   const ttls = new Map<string, number>();
   const calls = { turnstile: [] as Record<string, string>[], redis: [] as unknown[][][], github: [] as { url: string; body: Record<string, unknown> }[] };
@@ -64,7 +76,7 @@ function fakeWorld({ turnstile = "pass", redis = "up", issueStatus = 201, labels
       calls.turnstile.push(body);
       if (turnstile === "hang") return hang(init?.signal);
       if (turnstile === "down") return new Response("bad gateway", { status: 502 });
-      return Response.json(turnstile === "pass" ? { success: true, "error-codes": [] } : { success: false, "error-codes": ["invalid-input-response"] });
+      return Response.json(turnstile === "pass" ? { success: true, "error-codes": [], ...solved } : { success: false, "error-codes": ["invalid-input-response"] });
     }
     if (url === "https://redis.test/multi-exec") {
       expect((init?.headers as Record<string, string>).Authorization).toBe("Bearer redis-token");
@@ -261,6 +273,35 @@ describe("Turnstile", () => {
     expect(res.status).toBe(503);
     expect(parse(res).error).toBe("unavailable");
     expect(world.calls.github).toHaveLength(0);
+  });
+
+  test("a token solved for another form or another site is refused", async () => {
+    const cases = [
+      { hostname: "stems.test", action: "separate" },
+      { hostname: "stems.test" },
+      { hostname: "evil.example", action: "feedback" },
+      // What Cloudflare's test keys always answer.
+      { hostname: "example.com" },
+    ];
+    for (const solved of cases) {
+      const world = fakeWorld({ solved });
+      const res = await createRelay({ env: ENV, fetch: world.fetch, log: quiet })(request(goodBug()));
+      expect(res.status, JSON.stringify(solved)).toBe(403);
+      expect(parse(res).error).toBe("turnstile_failed");
+      expect(world.calls.redis).toHaveLength(0);
+    }
+  });
+
+  test("any allowed origin's hostname passes, and test keys pass once the check is off", async () => {
+    const preview = fakeWorld({ solved: { hostname: "preview.stems.test", action: "feedback" } });
+    expect((await createRelay({ env: ENV, fetch: preview.fetch, log: quiet })(request(goodBug()))).status).toBe(201);
+    const testKeys = fakeWorld({ solved: { hostname: "example.com" } });
+    const res = await createRelay({ env: ENV, fetch: testKeys.fetch, log: quiet, checkTurnstileSource: false })(request(goodBug()));
+    expect(res.status).toBe(201);
+  });
+
+  test("the widget asks for the action the relay checks", () => {
+    expect(dialogTurnstileAction).toBe(TURNSTILE_ACTION);
   });
 });
 

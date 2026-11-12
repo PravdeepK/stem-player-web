@@ -15,12 +15,17 @@ export interface VerifyOptions {
   token: string;
   // Cloudflare uses it as one more signal. "unknown" isn't worth sending.
   ip?: string;
+  // Where the widget ran and which form it was for. Every form on the site
+  // shares one site key, so without these a token solved for one form would
+  // pass for another. Cloudflare's test keys always answer example.com with no
+  // action, so they can only be checked with real keys.
+  expect?: { action: string; hostnames: Set<string> };
   fetch?: typeof fetch;
   signal?: AbortSignal;
 }
 
 /** Throws a TurnstileError when Cloudflare can't be asked, so the caller can tell "no" from "down". */
-export async function verifyTurnstile({ secret, token, ip, fetch = globalThis.fetch, signal }: VerifyOptions): Promise<TurnstileResult> {
+export async function verifyTurnstile({ secret, token, ip, expect, fetch = globalThis.fetch, signal }: VerifyOptions): Promise<TurnstileResult> {
   const payload: Record<string, string> = { secret, response: token };
   if (ip && ip !== "unknown") payload.remoteip = ip;
   let res: Response;
@@ -37,6 +42,8 @@ export async function verifyTurnstile({ secret, token, ip, fetch = globalThis.fe
   if (!res.ok) throw new TurnstileError(`siteverify answered ${res.status}`);
   const body = await res.json().catch(() => null);
   if (!body || typeof body.success !== "boolean") throw new TurnstileError("siteverify sent no verdict");
-  if (body.success) return { ok: true };
-  return { ok: false, codes: Array.isArray(body["error-codes"]) ? body["error-codes"].map(String) : [] };
+  if (!body.success) return { ok: false, codes: Array.isArray(body["error-codes"]) ? body["error-codes"].map(String) : [] };
+  if (expect && body.action !== expect.action) return { ok: false, codes: [`action-mismatch: ${String(body.action)}`] };
+  if (expect && !expect.hostnames.has(body.hostname)) return { ok: false, codes: [`hostname-mismatch: ${String(body.hostname)}`] };
+  return { ok: true };
 }
