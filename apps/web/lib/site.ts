@@ -4,6 +4,10 @@ export const SITE_NAME = "Stems";
 
 export const SITE_DESCRIPTION = "A Stem Player-style mixer that runs in the browser.";
 
+// Search snippets show this alone, without the not-affiliated line, so it
+// leaves Kano's product name out.
+export const META_DESCRIPTION = "Mix a song's vocals, drums, bass and instrumental in the browser, on a 3D handheld player.";
+
 export const NOT_AFFILIATED =
   "The device is modelled after the Stem Player hardware by Kano. This is an independent, non-commercial fan project, not affiliated with or endorsed by Kano or Ye.";
 
