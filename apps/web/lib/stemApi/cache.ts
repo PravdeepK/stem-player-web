@@ -19,8 +19,8 @@ import {
 // OPFS can't rename a folder, so the desktop's temp-folder-then-rename becomes
 // meta.json-last: an entry without one is unfinished and never listed.
 
-// Same total as the desktop. AAC stems are about a tenth the size of its WAVs,
-// so this holds far more songs.
+// Same total as the desktop. AAC stems are smaller than its WAVs, so this holds
+// more songs; how many more depends on the bitrate the separator encodes at.
 export const MAX_CACHE_BYTES = 2 * 1024 * 1024 * 1024;
 
 const ID_PATTERN = new RegExp(`^[0-9a-f]{${HASH_LENGTH}}-[a-z_]+$`);
