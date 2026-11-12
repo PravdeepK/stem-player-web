@@ -61,7 +61,13 @@ export async function pickStemsFolder(): Promise<Result<{ stems: StemMap<File>; 
       console.error("[stems] folder picker failed:", err);
       return { ok: false, message: "Couldn't open that folder." };
     }
-    return resolveDirectory(dir);
+    try {
+      return await resolveDirectory(dir);
+    } catch (err) {
+      // Permission revoked, or a file moved while the folder was being read.
+      console.error("[stems] couldn't read the folder:", err);
+      return { ok: false, message: "Couldn't read that folder." };
+    }
   }
 
   // `multiple` matters where webkitdirectory is ignored: the same input then
