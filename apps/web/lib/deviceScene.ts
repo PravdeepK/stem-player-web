@@ -1,7 +1,13 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import { HOLD_MS, createGrooveGestures, type StemMap, type StemName } from "@stem-player-web/core";
+import {
+  DEFAULT_DOUBLE_CLICK_MS,
+  HOLD_MS,
+  createGrooveGestures,
+  type StemMap,
+  type StemName,
+} from "@stem-player-web/core";
 
 // The 3D Stem Player. Plain three.js held outside React's render cycle, the same
 // way useAudioMixer holds the audio graph: React pushes state in, the scene calls
@@ -34,9 +40,6 @@ const FRAME_RADIUS = 0.048;
 
 const TAP_SLOP_PX = 5;
 const TURN_RAD_PER_PX = 0.009;
-// Browsers don't expose the system double-click interval, so grooves and the
-// background share the value the desktop fell back to without one.
-const DOUBLE_CLICK_MS = 350;
 // How far along a groove counts as its outer end, where a hold solos the stem.
 const SOLO_ZONE_START = 0.6;
 const HOME_RETURN_RATE = 9;
@@ -414,13 +417,14 @@ export async function createDeviceScene(
     onSolo: (stem) => actions.onGrooveSolo(stem),
     onHoldStart: (stem) => actions.onGrooveHoldStart(stem),
     onHoldEnd: (stem) => actions.onGrooveHoldEnd(stem),
-    doubleClickMs: DOUBLE_CLICK_MS,
   });
   let lastBackgroundTap = -Infinity;
 
   function onBackgroundTap(e: PointerEvent) {
     if (overBody(e)) return;
-    if (e.timeStamp - lastBackgroundTap < DOUBLE_CLICK_MS) {
+    // Browsers don't expose the system double-click interval, so the background
+    // uses the same default as the grooves.
+    if (e.timeStamp - lastBackgroundTap < DEFAULT_DOUBLE_CLICK_MS) {
       lastBackgroundTap = -Infinity;
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
         root.quaternion.copy(HOME);
