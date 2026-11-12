@@ -13,8 +13,6 @@
   --muted: #948b83;
   --accent: #f5f5f5;
   --danger: #ff6b6b;
-  --ok: #7ee081;
-  --wave: #4a4a4a;
 
   /* Radius grows with the size of the thing: panels, then the controls on
      them, then the parts inside a control. */
