@@ -1016,7 +1016,12 @@ button.link:hover:not(:disabled) {
   }
   .segmented button {
     min-width: 0;
-    padding: 3px 10px;
+    padding: 3px 6px;
+  }
+  /* On the narrowest phones the control drops under its label rather than
+     being clipped by the group's rounded corners. */
+  .group-row {
+    flex-wrap: wrap;
   }
   .meter-stems--wave {
     width: 140px;
