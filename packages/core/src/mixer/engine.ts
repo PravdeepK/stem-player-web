@@ -354,8 +354,9 @@ export function createMixer(deps: MixerDeps): Mixer {
     const superseded = () => token !== loadToken;
     loaded = false;
     teardownPlayback();
-    // The old song's buffers go before the new one decodes, so the two are
-    // never in memory together.
+    // The old song's buffers go before the new one decodes. A load this one
+    // replaces can still finish the decode it's in, and holds its buffers
+    // until it notices at its next await.
     buffers = {};
     disconnectGraph();
     setState({ error: "", isLoading: true, isLoaded: false, isPlaying: false, currentTime: 0, buffers: null });
