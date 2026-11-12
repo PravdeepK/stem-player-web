@@ -59,7 +59,7 @@ function cleanLine(value: string) {
 
 function escapeMarkdown(text: string) {
   return text
-    .replace(/&/g, "&amp;")
+    .replace(/&(?=#[0-9]{1,7};|#[xX][0-9a-fA-F]{1,6};|[A-Za-z][A-Za-z0-9]*;)/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/(^|\W)@(?=[a-z0-9])/gi, "$1@\u2060");
 }

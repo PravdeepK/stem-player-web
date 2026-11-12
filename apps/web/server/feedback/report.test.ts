@@ -43,7 +43,7 @@ describe("the dialog's copy of the report rules", () => {
     const reports = [
       buildReport("bug", FIELDS, SYSTEM),
       buildReport("feature", { ...FIELDS, includeSystem: false }, SYSTEM),
-      buildReport("bug", { title: "  Two\tspaces  ", description: "Hey @octocat </details> &#64;a &#x40;b &commat;c R&B\r\nnext `@line café@d\u0007", steps: "  " }, null),
+      buildReport("bug", { title: "  Two\tspaces  ", description: "Hey @octocat </details> &#64;a &#x40;b &commat;c &#64d R&B https://example.com/?a=1&b=2 `a && b`\r\nnext `@line café@d\u0007\n```\nif (a && b) play();\n```", steps: "  " }, null),
     ];
     for (const report of reports) {
       const checked = validateReport(report);

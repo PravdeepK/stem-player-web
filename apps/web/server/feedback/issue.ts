@@ -58,7 +58,12 @@ function cleanLine(value: string) {
  * User text as issue markdown: no raw HTML (so nothing can close the system
  * info block or hide text), no character references (GitHub decodes &#64;
  * and &commat; to an @ before it looks for mentions), and no @mentions, so
- * nobody gets pinged. The & goes first so the &lt; isn't escaped twice.
+ * nobody gets pinged.
+ *
+ * Only an & that starts a reference CommonMark would decode (it has to end in
+ * a semicolon) gets escaped. Escaping every & would break bare URLs like
+ * ?a=1&b=2 and show &amp; inside code, where nothing is decoded. The & goes
+ * before the < so the &lt; it adds isn't escaped again.
  *
  * Mentions get a word joiner (U+2060) after the @, which breaks GitHub's
  * mention pattern and renders as nothing. The desktop wrapped them in
@@ -68,7 +73,7 @@ function cleanLine(value: string) {
  */
 export function escapeMarkdown(text: string) {
   return text
-    .replace(/&/g, "&amp;")
+    .replace(/&(?=#[0-9]{1,7};|#[xX][0-9a-fA-F]{1,6};|[A-Za-z][A-Za-z0-9]*;)/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/(^|\W)@(?=[a-z0-9])/gi, "$1@\u2060");
 }

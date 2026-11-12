@@ -146,9 +146,26 @@ describe("formatIssueBody", () => {
     }
   });
 
-  test("escapes & before <, so nothing comes out escaped twice", () => {
+  test("leaves an & alone unless it starts a reference GitHub would decode", () => {
+    const untouched = [
+      "https://example.com/?a=1&b=2",
+      "[the link](https://example.com/?a=1&b=2)",
+      "`a && b`",
+      "```\nif (a && b) play();\n```",
+      "R&B",
+      // No semicolon, so it doesn't decode.
+      "&#64octocat",
+    ];
+    for (const description of untouched) {
+      const body = formatIssueBody(validReport({ type: "feature", title: "Amp", description }));
+      expect(body, description).toContain(description);
+      expect(body, description).not.toContain("&amp;");
+    }
+  });
+
+  test("escapes a reference's & before the <, so nothing comes out escaped twice", () => {
     const body = formatIssueBody(validReport({ type: "feature", title: "Amp", description: "R&B <3 &lt;" }));
-    expect(body).toContain("R&amp;B &lt;3 &amp;lt;");
+    expect(body).toContain("R&B &lt;3 &amp;lt;");
   });
 
   test("leaves an @ after a word character alone, since GitHub doesn't treat it as a mention", () => {
