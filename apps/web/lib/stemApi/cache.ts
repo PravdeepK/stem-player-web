@@ -113,7 +113,8 @@ export function createStemCache(dir: CacheDirectory, maxBytes: number) {
   async function read(id: string): Promise<CacheEntry | null> {
     if (!ID_PATTERN.test(id)) return null;
     const entryDir = await getDirectory(dir, id);
-    const metaFile = entryDir && (await getFile(entryDir, META));
+    if (!entryDir) return null;
+    const metaFile = await getFile(entryDir, META);
     const meta = metaFile && parseMeta(await metaFile.text());
     const stemsDir = meta && (await getDirectory(entryDir, STEMS));
     if (!meta || !stemsDir) return null;
