@@ -573,6 +573,8 @@ export async function createDeviceScene(
 
   resize();
 
+  const pulseTimers = new Set<ReturnType<typeof setTimeout>>();
+
   return {
     setLevels(levels) {
       for (const [stem, { volume, glow }] of Object.entries(levels) as [StemName, { volume: number; glow: number }][]) {
@@ -588,14 +590,17 @@ export async function createDeviceScene(
       const b = buttonNamed(name);
       b.target = 1;
       invalidate();
-      setTimeout(() => {
+      const timer = setTimeout(() => {
+        pulseTimers.delete(timer);
         b.target = 0;
         invalidate();
       }, 110);
+      pulseTimers.add(timer);
     },
 
     dispose() {
       cancelAnimationFrame(raf);
+      for (const timer of pulseTimers) clearTimeout(timer);
       // A held pill lets go, as a held groove does in grooves.dispose(), so its
       // repeat or scrub doesn't outlive the scene.
       const g = gesture;
