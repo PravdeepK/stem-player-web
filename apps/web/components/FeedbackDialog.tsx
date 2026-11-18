@@ -1,5 +1,5 @@
 import type { FeedbackType } from "@stem-player-web/core";
-import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent, type RefObject } from "react";
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent, type RefObject, type SyntheticEvent } from "react";
 
 // Report a Bug and Request a Feature, as a modal on the page where the desktop
 // had its own window. The relay in server/feedback checks and posts the report.
@@ -430,7 +430,7 @@ function useTurnstile(container: RefObject<HTMLDivElement | null>) {
 
 type Invalid = Partial<Record<"title" | "description", string>>;
 
-function FeedbackForm({ type, close }: { type: FeedbackType; close: () => void }) {
+function FeedbackForm({ type, close, onBusy }: { type: FeedbackType; close: () => void; onBusy: (busy: boolean) => void }) {
   const isBug = type === "bug";
   const [system] = useState(browserSystemInfo);
   const [fields, setFields] = useState<Fields>({ title: "", description: "", steps: "", includeSystem: true, website: "" });
@@ -450,6 +450,8 @@ function FeedbackForm({ type, close }: { type: FeedbackType; close: () => void }
   useEffect(() => {
     if (failure) failureRef.current?.scrollIntoView({ block: "nearest" });
   }, [failure]);
+
+  useEffect(() => onBusy(busy), [busy, onBusy]);
 
   const report = buildReport(type, fields, system);
 
@@ -655,6 +657,10 @@ function FeedbackForm({ type, close }: { type: FeedbackType; close: () => void }
 
 export default function FeedbackDialog({ type, onClose }: FeedbackDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const busyRef = useRef(false);
+  const setBusy = useCallback((busy: boolean) => {
+    busyRef.current = busy;
+  }, []);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -667,9 +673,15 @@ export default function FeedbackDialog({ type, onClose }: FeedbackDialogProps) {
   // is the one place onClose gets called.
   const close = () => dialogRef.current?.close();
 
+  // Escape is held off while a report posts, like Cancel, so the sender always
+  // sees the issue number or the error instead of retrying into a duplicate.
+  const cancel = (event: SyntheticEvent<HTMLDialogElement>) => {
+    if (busyRef.current) event.preventDefault();
+  };
+
   return (
-    <dialog ref={dialogRef} className="feedback" aria-labelledby="feedback-heading" onClose={onClose}>
-      {type && <FeedbackForm key={type} type={type} close={close} />}
+    <dialog ref={dialogRef} className="feedback" aria-labelledby="feedback-heading" onCancel={cancel} onClose={onClose}>
+      {type && <FeedbackForm key={type} type={type} close={close} onBusy={setBusy} />}
     </dialog>
   );
 }
