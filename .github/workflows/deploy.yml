@@ -42,8 +42,11 @@ jobs:
       - run: npx --yes "$VERCEL_CLI" pull --yes --environment=preview --token="$VERCEL_TOKEN"
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      # The build runs the PR's own code, so it never gets the token.
+      # The build runs the PR's own code, so it never gets the token. GITHUB_SHA
+      # here is a merge commit, so the site version comes from the PR's head.
       - run: npx --yes "$VERCEL_CLI" build
+        env:
+          VERCEL_GIT_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
       - id: deploy
         run: |
           url=$(npx --yes "$VERCEL_CLI" deploy --prebuilt --token="$VERCEL_TOKEN")
@@ -78,7 +81,11 @@ jobs:
       - run: npx --yes "$VERCEL_CLI" pull --yes --environment=production --token="$VERCEL_TOKEN"
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      # GITHUB_SHA is main's newest commit, which can be ahead of the one
+      # checked out above, so the site version comes from the checkout.
       - run: npx --yes "$VERCEL_CLI" build --prod
+        env:
+          VERCEL_GIT_COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
       - id: deploy
         run: |
           url=$(npx --yes "$VERCEL_CLI" deploy --prebuilt --prod --token="$VERCEL_TOKEN")
