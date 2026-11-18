@@ -36,8 +36,6 @@ export interface CacheEntry {
   demo: boolean;
 }
 
-export type HapticPattern = "generic" | "level" | "alignment";
-
 export type FeedbackType = "bug" | "feature";
 
 export type StemApi = {
