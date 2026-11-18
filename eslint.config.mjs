@@ -26,6 +26,26 @@ export default defineConfig(
     },
   },
   {
+    // server/ runs with the GitHub App key, the Turnstile secret and the Redis
+    // token. Only the API routes may import it, so none of that code can end up
+    // in a page bundle.
+    files: ["apps/web/**/*.{ts,tsx}"],
+    ignores: ["apps/web/pages/api/**", "apps/web/server/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              regex: "^\\.{1,2}/(.+/)?server(/|$)",
+              message: "Only pages/api may import from server/.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     // core has to run in Node under Vitest, where there is no page. It keeps the
     // DOM's types for AudioContext and Blob, but can't reach for its globals.
     files: ["packages/core/**/*.ts"],
