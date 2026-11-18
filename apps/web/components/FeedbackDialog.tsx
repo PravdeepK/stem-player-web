@@ -19,7 +19,7 @@ const TURNSTILE_HEADER = "X-Turnstile-Token";
 // form on the site can't be spent here.
 export const TURNSTILE_ACTION = "feedback";
 const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
-const SITE_VERSION = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 7);
+const SITE_VERSION = process.env.SITE_VERSION;
 export const ISSUES_URL = "https://github.com/PravdeepK/stem-player-web/issues";
 // GitHub answers 414 for very long links; stay well under the usual 8 KB.
 export const MAX_PREFILL_URL = 8000;
