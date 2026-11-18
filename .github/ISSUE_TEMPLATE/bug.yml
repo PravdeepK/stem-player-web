@@ -1,7 +1,7 @@
 # The same fields as Report a bug on the site, which also prefills this form
 # (by field id) when it can't post the issue itself.
 name: Bug report
-description: Something in Stem Player doesn't work the way it should.
+description: Something on the site doesn't work the way it should.
 labels: ["bug"]
 body:
   - type: markdown

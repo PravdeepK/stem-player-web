@@ -1,7 +1,7 @@
 # The same fields as Request a feature on the site, which also prefills this
 # form (by field id) when it can't post the issue itself.
 name: Feature request
-description: An idea for something Stem Player could do.
+description: An idea for something the site could do.
 labels: ["enhancement"]
 body:
   - type: markdown
