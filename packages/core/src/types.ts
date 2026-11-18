@@ -55,7 +55,6 @@ export type StemApi = {
   // `dir` is the picked folder's name, or "" when the stems were picked as files.
   pickStemsFolder(): Promise<Result<{ stems: StemMap<File>; dir: string }>>;
   readStem(source: StemSource): Promise<ArrayBuffer>;
-  haptic(pattern: HapticPattern): void;
   onStage(handler: (stage: Stage) => void): () => void;
   onProgress(handler: (value: number) => void): () => void;
 };
