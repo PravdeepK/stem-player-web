@@ -88,8 +88,6 @@ export interface MixerHandle {
   onTime(listener: (time: number) => void): () => void;
   // `stopped` is true once, on the frame playback stops.
   onLevels(listener: (levels: StemLevels, stopped: boolean) => void): () => void;
-  getPosition(): number;
-  getOutputLatency(): number;
 }
 
 // --- separation ------------------------------------------------------------
