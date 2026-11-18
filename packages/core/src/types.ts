@@ -165,9 +165,13 @@ export const jobKey = (jobId: string) => `job:${jobId}`;
 export const JOB_TTL_SECONDS = 24 * 60 * 60;
 
 // Prefixes for the rate limiters. The daily counters take a UTC date (YYYY-MM-DD).
+// In the per-IP keys the date goes before the IP because IPv6 addresses are
+// full of colons.
 export const SEPARATIONS_PER_IP_PREFIX = "limit:separate:ip";
+export const separationsPerIpKey = (day: string, ip: string) => `${SEPARATIONS_PER_IP_PREFIX}:${day}:${ip}`;
 export const separationsTodayKey = (day: string) => `limit:separate:day:${day}`;
 export const FEEDBACK_PER_IP_PREFIX = "limit:feedback:ip";
+export const feedbackPerIpKey = (day: string, ip: string) => `${FEEDBACK_PER_IP_PREFIX}:${day}:${ip}`;
 export const feedbackTodayKey = (day: string) => `limit:feedback:day:${day}`;
 // A daily counter only matters for its own UTC day. Two days covers a request
 // that lands just before midnight, then the key goes.

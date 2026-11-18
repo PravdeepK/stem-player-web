@@ -1,4 +1,4 @@
-import { DAILY_COUNTER_TTL_SECONDS, FEEDBACK_PER_IP_PREFIX, feedbackTodayKey } from "@stem-player-web/core";
+import { DAILY_COUNTER_TTL_SECONDS, feedbackPerIpKey, feedbackTodayKey } from "@stem-player-web/core";
 
 // Daily caps, counted in Upstash Redis so every function instance shares them.
 // The desktop relay counted in memory, which reset on every cold start.
@@ -15,8 +15,7 @@ export interface DailyLimit {
 export const FEEDBACK_LIMIT: DailyLimit = {
   perIp: 5,
   overall: 30,
-  // The date goes before the IP because IPv6 addresses are full of colons.
-  ipKey: (day, ip) => `${FEEDBACK_PER_IP_PREFIX}:${day}:${ip}`,
+  ipKey: feedbackPerIpKey,
   dayKey: feedbackTodayKey,
 };
 
