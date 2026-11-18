@@ -237,7 +237,7 @@ export default function Home() {
         onMenuClose={closeMenu}
         onFeedback={setFeedback}
       />
-      {song?.demo && (
+      {song?.demo && mixer.isLoaded && (
         <footer className="credit">
           <span>Song: {DEMO_CREDIT.song}</span>
           <span>{DEMO_CREDIT.provider}</span>

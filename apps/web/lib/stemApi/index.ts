@@ -54,9 +54,6 @@ export const stemApi: StemApi = {
   exportStems,
   pickStemsFolder,
   readStem,
-  // The desktop sent taps here to reach its native trackpad addon. On the web,
-  // vibration is lib/haptics.ts's job.
-  haptic: () => {},
   onStage,
   onProgress,
 };

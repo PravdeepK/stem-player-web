@@ -1,16 +1,15 @@
-import type { HapticPattern } from "@stem-player-web/core";
-
 // Most devices have no haptics the page can reach: Safari has no
 // navigator.vibrate, and desktop Chrome's does nothing. So every call can be a
 // no-op, and callers never branch on whether a tap actually happened. Android
 // buzzes the motor instead.
+
+type HapticPattern = "generic" | "level";
 
 // Short enough that a press feels like a tick, not a buzz. The detent runs
 // longer so reaching the end of a range feels different from a press.
 const VIBRATE_MS: Record<HapticPattern, number> = {
   generic: 10,
   level: 25,
-  alignment: 10,
 };
 
 function fire(pattern: HapticPattern) {
@@ -21,11 +20,6 @@ function fire(pattern: HapticPattern) {
 
 /** A button-press tap: mute, solo. */
 export function tap() {
-  fire("generic");
-}
-
-/** A beat in the music. */
-export function beat() {
   fire("generic");
 }
 

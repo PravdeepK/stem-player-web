@@ -180,7 +180,6 @@ describe("transport", () => {
     const { context, mixer } = await loaded();
     await mixer.play();
     context.currentTime = 0.06 + 2.5;
-    expect(mixer.getPosition()).toBeCloseTo(2.5);
     mixer.pause();
     context.currentTime = 9;
     expect(mixer.getState()).toMatchObject({ isPlaying: false });
@@ -224,11 +223,6 @@ describe("transport", () => {
     expect(last).toEqual([0, 1, 0, 0]);
     mixer.setMute("drums", true);
     expect(mixer.getState().settings.drums).toEqual({ volume: 1, muted: true, solo: false });
-  });
-
-  it("reads the output latency from the context", async () => {
-    const { mixer } = await loaded();
-    expect(mixer.getOutputLatency()).toBeCloseTo(0.025);
   });
 
   it("doesn't start playing when disposed during the resume", async () => {

@@ -312,10 +312,6 @@ export function createMixer(deps: MixerDeps): Mixer {
     };
   };
 
-  // Seconds from the graph to the speakers, large on Bluetooth. Not every
-  // browser fills in outputLatency.
-  const getOutputLatency = () => (context ? (context.outputLatency || 0) + (context.baseLatency || 0) : 0);
-
   const teardownPlayback = () => {
     cancelFrame();
     stopSources();
@@ -424,8 +420,5 @@ export function createMixer(deps: MixerDeps): Mixer {
     setMasterVolume,
     onTime,
     onLevels,
-    // The playhead read from the audio clock, not the throttled state.
-    getPosition: positionNow,
-    getOutputLatency,
   };
 }

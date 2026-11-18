@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { HASH_PATTERN, JOB_ID_PATTERN, demoStemKey, stemKey, uploadKey } from "./types";
+import { HASH_PATTERN, JOB_ID_PATTERN, demoStemKey, feedbackPerIpKey, separationsPerIpKey, stemKey, uploadKey } from "./types";
 
 describe("storage keys", () => {
   it("lays out uploads, stems and the demo song", () => {
@@ -7,6 +7,11 @@ describe("storage keys", () => {
     expect(uploadKey("job-1")).toBe("uploads/job-1");
     expect(stemKey(hash, "drums")).toBe(`stems/${hash}/drums.m4a`);
     expect(demoStemKey("vocals")).toBe("demo/vocals.m4a");
+  });
+
+  it("puts the date before the IP in the per-IP limit keys", () => {
+    expect(feedbackPerIpKey("2026-11-12", "2001:db8::1")).toBe("limit:feedback:ip:2026-11-12:2001:db8::1");
+    expect(separationsPerIpKey("2026-11-12", "1.1.1.1")).toBe("limit:separate:ip:2026-11-12:1.1.1.1");
   });
 
   it("only accepts a hash that can't escape its folder", () => {
