@@ -532,6 +532,34 @@ button.link:hover:not(:disabled) {
 .kbd-controls button:focus-visible {
   opacity: 1;
 }
+/* Without the device they take its place, sized for a finger. */
+.kbd-controls--fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 148px));
+  align-content: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+  pointer-events: none;
+}
+.kbd-controls--fallback button {
+  position: static;
+  min-height: 44px;
+  padding: 10px 12px;
+  font-size: 13px;
+  opacity: 1;
+  pointer-events: auto;
+}
+.kbd-controls--fallback button:disabled {
+  opacity: 0.4;
+}
+.kbd-controls--fallback button:first-child {
+  grid-column: 1 / -1;
+  min-height: 56px;
+  border-radius: var(--radius-panel);
+}
 
 /* Wide screens: centred, with room either side for the links and the "?". */
 .transport {

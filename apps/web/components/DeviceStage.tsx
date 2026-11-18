@@ -31,7 +31,8 @@ import { detentOnEndpoint, tap } from "../lib/haptics";
 //
 // The centre, dots and − / + also have hidden buttons for keyboard access. They
 // only show while focused, and pulse the matching part so focus has a visible
-// effect on the device.
+// effect on the device. Without the device they stay on screen in its place,
+// since a phone has no Tab key to reveal them.
 
 export interface DeviceStageProps {
   mixer: MixerHandle;
@@ -373,7 +374,7 @@ export default function DeviceStage({ mixer, busy, applyVolume, onLoadPress, onU
 
       <div className="stage-caption" aria-live="polite">
         {failed ? (
-          "Couldn’t load the 3D player. Its controls are in the menu."
+          "Couldn’t load the 3D player. Stem controls are in the menu."
         ) : (
           <>
             {captionTitle}
@@ -382,10 +383,16 @@ export default function DeviceStage({ mixer, busy, applyVolume, onLoadPress, onU
         )}
       </div>
 
-      <div className="kbd-controls">
-        <button onClick={pressed("Btn_Center", actions.togglePlay)}>{isPlaying ? "Pause" : "Play"}</button>
-        <button onClick={pressed("Btn_Dots", () => actions.jump(-1))}>Back {JUMP_SECONDS} seconds</button>
-        <button onClick={pressed("Btn_Dots", () => actions.jump(1))}>Forward {JUMP_SECONDS} seconds</button>
+      <div className={`kbd-controls ${failed ? "kbd-controls--fallback" : ""}`}>
+        <button onClick={pressed("Btn_Center", actions.togglePlay)} disabled={failed && !isLoaded}>
+          {isPlaying ? "Pause" : "Play"}
+        </button>
+        <button onClick={pressed("Btn_Dots", () => actions.jump(-1))} disabled={failed && !isLoaded}>
+          Back {JUMP_SECONDS} seconds
+        </button>
+        <button onClick={pressed("Btn_Dots", () => actions.jump(1))} disabled={failed && !isLoaded}>
+          Forward {JUMP_SECONDS} seconds
+        </button>
         <button onClick={pressed("Btn_Volume", () => actions.nudgeVolume(-1))}>Volume down</button>
         <button onClick={pressed("Btn_Volume", () => actions.nudgeVolume(1))}>Volume up</button>
       </div>
