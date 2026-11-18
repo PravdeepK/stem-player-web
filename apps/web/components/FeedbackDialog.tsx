@@ -1,7 +1,7 @@
 import type { FeedbackType } from "@stem-player-web/core";
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent, type RefObject, type SyntheticEvent } from "react";
 
-// Report a Bug and Request a Feature, as a modal on the page where the desktop
+// Report a bug and Request a feature, as a modal on the page where the desktop
 // had its own window. The relay in server/feedback checks and posts the report.
 // Nothing under server/ may reach the page, so the bits of its rules that the
 // preview and the GitHub fallback need are copied here, and
@@ -25,7 +25,7 @@ export const ISSUES_URL = "https://github.com/PravdeepK/stem-player-web/issues";
 export const MAX_PREFILL_URL = 8000;
 const TRUNCATED_NOTE = "\n\n[Cut short to fit in a link. The full report is on your clipboard.]";
 const TIMEOUT_MS = 15000;
-const TITLES = { bug: "Report a Bug", feature: "Request a Feature" };
+const TITLES = { bug: "Report a bug", feature: "Request a feature" };
 
 // --- the report, as the relay reads it -------------------------------------
 
