@@ -675,6 +675,16 @@ export default function FeedbackDialog({ type, onClose }: FeedbackDialogProps) {
 
   // Escape is held off while a report posts, like Cancel, so the sender always
   // sees the issue number or the error instead of retrying into a duplicate.
+  // Browsers stop honouring a prevented cancel after a couple of presses, so
+  // the keydown is stopped too. It's caught on the window because the
+  // disabled fields drop focus out of the dialog.
+  useEffect(() => {
+    const holdEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape" && busyRef.current) event.preventDefault();
+    };
+    window.addEventListener("keydown", holdEscape);
+    return () => window.removeEventListener("keydown", holdEscape);
+  }, []);
   const cancel = (event: SyntheticEvent<HTMLDialogElement>) => {
     if (busyRef.current) event.preventDefault();
   };
