@@ -99,20 +99,6 @@ button.primary:hover:not(:disabled) {
   background: #ffffff;
 }
 
-button.link {
-  background: none;
-  border: none;
-  padding: 2px 4px;
-  color: var(--muted);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-button.link:hover:not(:disabled) {
-  color: var(--text);
-  background: none;
-}
-
 /* --- layout ---------------------------------------------------------- */
 /* dvh rather than vh, so the transport isn't hidden behind a phone
    browser's toolbar. */
@@ -259,9 +245,6 @@ button.link:hover:not(:disabled) {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--radius-control);
-}
-.notice .link {
-  flex: none;
 }
 .stems-head {
   display: flex;
