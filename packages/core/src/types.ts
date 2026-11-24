@@ -36,8 +36,6 @@ export interface CacheEntry {
   demo: boolean;
 }
 
-export type HapticPattern = "generic" | "level" | "alignment";
-
 export type FeedbackType = "bug" | "feature";
 
 export type StemApi = {
@@ -55,7 +53,6 @@ export type StemApi = {
   // `dir` is the picked folder's name, or "" when the stems were picked as files.
   pickStemsFolder(): Promise<Result<{ stems: StemMap<File>; dir: string }>>;
   readStem(source: StemSource): Promise<ArrayBuffer>;
-  haptic(pattern: HapticPattern): void;
   onStage(handler: (stage: Stage) => void): () => void;
   onProgress(handler: (value: number) => void): () => void;
 };
@@ -91,8 +88,6 @@ export interface MixerHandle {
   onTime(listener: (time: number) => void): () => void;
   // `stopped` is true once, on the frame playback stops.
   onLevels(listener: (levels: StemLevels, stopped: boolean) => void): () => void;
-  getPosition(): number;
-  getOutputLatency(): number;
 }
 
 // --- separation ------------------------------------------------------------
@@ -166,9 +161,13 @@ export const jobKey = (jobId: string) => `job:${jobId}`;
 export const JOB_TTL_SECONDS = 24 * 60 * 60;
 
 // Prefixes for the rate limiters. The daily counters take a UTC date (YYYY-MM-DD).
+// In the per-IP keys the date goes before the IP because IPv6 addresses are
+// full of colons.
 export const SEPARATIONS_PER_IP_PREFIX = "limit:separate:ip";
+export const separationsPerIpKey = (day: string, ip: string) => `${SEPARATIONS_PER_IP_PREFIX}:${day}:${ip}`;
 export const separationsTodayKey = (day: string) => `limit:separate:day:${day}`;
 export const FEEDBACK_PER_IP_PREFIX = "limit:feedback:ip";
+export const feedbackPerIpKey = (day: string, ip: string) => `${FEEDBACK_PER_IP_PREFIX}:${day}:${ip}`;
 export const feedbackTodayKey = (day: string) => `limit:feedback:day:${day}`;
 // A daily counter only matters for its own UTC day. Two days covers a request
 // that lands just before midnight, then the key goes.
